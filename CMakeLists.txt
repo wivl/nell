@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(nell)
+project(nellpt)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.h src/*.hpp)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp)
 
 
 # DEPENDENCIES

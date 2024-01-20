@@ -82,15 +82,34 @@ struct Camera {
     vec3 horizontal;
     vec3 vertical;
     vec3 origin;
+    vec3 u, v, w;
+    float lens_radius;
 };
 
 
-Camera makeCamera(vec3 position, vec3 vertical, vec3 horizontal, vec3 lowerleft) {
+// TODO: 
+Camera makeCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist) {
     Camera camera;
-    camera.origin = position;
-    camera.vertical = vertical;
-    camera.horizontal = horizontal;
-    camera.lower_left_corner = lowerleft;
+
+    camera.origin = lookfrom;
+    camera.lens_radius = aperture / 2;
+
+    float theta = radians(vfov);
+    float half_height = tan(theta / 2);
+    float half_width = aspect * half_height;
+
+    camera.w = normalize(lookfrom - lookat);
+    camera.u = normalize(cross(vup, camera.w));
+    camera.v = cross(camera.w, camera.u);
+
+    camera.lower_left_corner = camera.origin 
+        - half_width * focus_dist * camera.u
+        - half_height * focus_dist * camera.v
+        - focus_dist * camera.w;
+
+    camera.horizontal = 2 * half_width * focus_dist * camera.u;
+    camera.vertical = 2 * half_height * focus_dist * camera.v;
+
     return camera;
 }
 
@@ -174,10 +193,27 @@ vec3 random_in_unit_sphere() {
 	return p;
 }
 
+// ---material
 // 漫反射
 struct Lambertian{
 	vec3 albedo; // color
 };
+
+// 金属
+struct Metallic{
+    vec3 albedo; // color
+    float fuzz;  // TODO:
+};
+
+// 电介质
+struct Dielectric{
+    vec3 albedo;
+    float ior;
+};
+
+Lambertian lambertMaterials[4];
+Metallic metallicMaterials[4];
+Dielectric dielectricMaterials[4];
 
 Lambertian makeLambertian(vec3 albedo){
 	Lambertian lambertian;
@@ -200,11 +236,7 @@ void lambertianScatter(in Lambertian lambertian,
 	scattered.direction = hitRecord.normal + random_in_unit_sphere();
 }
 
-// 金属
-struct Metallic{
-	vec3 albedo; // color
-	float fuzz;  // TODO:
-};
+
 
 Metallic makeMetallic(vec3 albedo, float fuzz){
 	Metallic metallic;
@@ -215,11 +247,22 @@ Metallic makeMetallic(vec3 albedo, float fuzz){
 	return metallic;
 }
 
-// 电介质
-struct Dielectric{
-	vec3 albedo;
-	float ior;
-};
+// return scattered vector
+vec3 reflect(in vec3 v, in vec3 n) {
+    return v - 2 * dot(n, v) * n;
+}
+
+void metallicScatter(in Metallic metallic,
+        in Ray incident,
+        in HitRecord hitRecord,
+        out Ray scattered,
+        out vec3 attenuation) {
+    attenuation = metallic.albedo;
+
+    scattered.origin = hitRecord.position;
+    scattered.direction = reflect(incident.direction, hitRecord.normal) + metallicMaterials[hitRecord.material_ptr].fuzz * random_in_unit_sphere();
+}
+
 
 Dielectric makeDielectric(vec3 albedo, float ior){
 	Dielectric dielectric;
@@ -230,20 +273,73 @@ Dielectric makeDielectric(vec3 albedo, float ior){
 	return dielectric;
 }
 
-Lambertian lambertMaterials[4];
-Metallic metallicMaterials[4];
-Dielectric dielectricMaterials[4];
+// TODO: 
+bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted){
+	vec3 uv = normalize(v);
+	float dt = dot(uv, n);
+	float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+	if (discriminant > 0.0){
+		refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
+		return true;
+	}
+
+	return false;
+}
+
+float schlick(float cosine, float ior){
+	float r0 = (1 - ior) / (1 + ior);
+	r0 = r0 * r0;
+	return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+void dielectricScatter(in Dielectric dielectric,
+in Ray incident,
+in HitRecord hitRecord,
+out Ray scattered,
+out vec3 attenuation) {
+	attenuation = dielectric.albedo;
+	vec3 reflected = reflect(incident.direction, hitRecord.normal);
+
+	vec3 outward_normal;
+	float ni_over_nt;
+	float cosine;
+	if (dot(incident.direction, hitRecord.normal) > 0.0) {//从内击中
+		outward_normal = -hitRecord.normal;
+		ni_over_nt = dielectric.ior;
+		cosine = dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
+	} else {// 从外击中
+		outward_normal = hitRecord.normal;
+		ni_over_nt = 1.0 / dielectric.ior;
+		cosine = -dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
+	}
+
+	float reflect_prob;
+	vec3 refracted;
+	if (refract(incident.direction, outward_normal, ni_over_nt, refracted)) {
+		reflect_prob = schlick(cosine, dielectric.ior);
+	} else {
+		reflect_prob = 1.0;
+	}
+
+	if (rand() < reflect_prob) {
+		scattered = Ray(hitRecord.position, refracted);
+	} else {
+		scattered = Ray(hitRecord.position, refracted);
+	}
+}
 
 
 // ---world
 struct World {
     int object_count;
-    Sphere objects[10];
+    Sphere objects[100];
 };
 
 World makeWorld() {
     lambertMaterials[0] = makeLambertian(vec3(0.1, 0.7, 0.7));
     lambertMaterials[1] = makeLambertian(vec3(0.5, 0.5, 0.5));
+    metallicMaterials[0] = makeMetallic(vec3(0.8, 0.8, 0.8), 0.3);
+    dielectricMaterials[0] = makeDielectric(vec3(1.0, 1.0, 1.0), 1.5);
 
     World world;
     world.objects[0] = makeSphere(
@@ -256,8 +352,18 @@ World makeWorld() {
             100.0,
             MAT_LAMBERTIAN,
             1);
+    world.objects[2] = makeSphere(
+            vec3(1.0, 0.0, -1.0),
+            0.5,
+            MAT_METALLIC,
+            0);
+    world.objects[3] = makeSphere(
+            vec3(-1.0, 0.0, -1.0),
+            0.5,
+            MAT_DIELECTRIC,
+            0);
 
-    world.object_count = 2;
+    world.object_count = 4;
 
     return world;
 }
@@ -312,6 +418,10 @@ vec3 rayTrace(Ray ray, int depth) {
                 hitRecord,
                 scatterRay,
                 attenuation);
+            } else if (hitRecord.material_type == MAT_METALLIC) {
+                metallicScatter(metallicMaterials[hitRecord.material_ptr], ray, hitRecord, scatterRay, attenuation);
+            } else if (hitRecord.material_type == MAT_DIELECTRIC) {
+                dielectricScatter(dielectricMaterials[hitRecord.material_ptr], ray, hitRecord, scatterRay, attenuation);
             }
 
             ray = scatterRay;
@@ -338,18 +448,23 @@ vec3 gammaCorrection(vec3 c){
 	return pow(c, vec3(1.0 / 2.2));
 }
 
+
+
 void main() {
     float u = screenCoord.x; // 0 ~ 1
     float v = screenCoord.y; // 0 ~ 1
 
     vec2 screenSize = vec2(WIDTH, HEIGHT);
 
-    Camera camera = makeCamera(
-            vec3(0.0, 0.0, 0.0),
-            vec3(0.0, 2.0, 0.0),
-            vec3(4.0, 0.0, 0.0),
-            vec3(-2.0, -1.0, -1.0)
-            );
+    float aspect_ratio = screenSize.x / screenSize.y;
+    vec3 lookfrom = vec3(13, 2, 3);
+    vec3 lookat = vec3(0, 0, 0);
+    vec3 vup = vec3(0, 1, 0);
+    float dist_to_focus = 1000.0;
+    float aperture = 0.1;
+
+    Camera camera = makeCamera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+
 
     vec3 color = vec3(0.0, 0.0, 0.0);
     int spp = 100;

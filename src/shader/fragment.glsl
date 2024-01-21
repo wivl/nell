@@ -15,39 +15,39 @@ uint m_u = uint(521288629);
 uint m_v = uint(362436069);
 
 uint GetUintCore(inout uint u, inout uint v){
-	v = uint(36969) * (v & uint(65535)) + (v >> 16);
-	u = uint(18000) * (u & uint(65535)) + (u >> 16);
-	return (v << 16) + u;
+    v = uint(36969) * (v & uint(65535)) + (v >> 16);
+    u = uint(18000) * (u & uint(65535)) + (u >> 16);
+    return (v << 16) + u;
 }
 
 float GetUniformCore(inout uint u, inout uint v){
-	uint z = GetUintCore(u, v);
-	
-	return float(z) / uint(4294967295);
+    uint z = GetUintCore(u, v);
+
+    return float(z) / uint(4294967295);
 }
 
 float GetUniform(){
-	return GetUniformCore(m_u, m_v);
+    return GetUniformCore(m_u, m_v);
 }
 
 uint GetUint(){
-	return GetUintCore(m_u, m_v);
+    return GetUintCore(m_u, m_v);
 }
 
 float rand(){
-	return GetUniform();
+    return GetUniform();
 }
 
 vec2 rand2(){
-	return vec2(rand(), rand());
+    return vec2(rand(), rand());
 }
 
 vec3 rand3(){
-	return vec3(rand(), rand(), rand());
+    return vec3(rand(), rand(), rand());
 }
 
 vec4 rand4(){
-	return vec4(rand(), rand(), rand(), rand());
+    return vec4(rand(), rand(), rand(), rand());
 }
 
 // --material
@@ -87,7 +87,7 @@ struct Camera {
 };
 
 
-// TODO: 
+// TODO:
 Camera makeCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist) {
     Camera camera;
 
@@ -102,10 +102,10 @@ Camera makeCamera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect
     camera.u = normalize(cross(vup, camera.w));
     camera.v = cross(camera.w, camera.u);
 
-    camera.lower_left_corner = camera.origin 
-        - half_width * focus_dist * camera.u
-        - half_height * focus_dist * camera.v
-        - focus_dist * camera.w;
+    camera.lower_left_corner = camera.origin
+    - half_width * focus_dist * camera.u
+    - half_height * focus_dist * camera.v
+    - focus_dist * camera.w;
 
     camera.horizontal = 2 * half_width * focus_dist * camera.u;
     camera.vertical = 2 * half_height * focus_dist * camera.v;
@@ -141,13 +141,13 @@ Sphere makeSphere(vec3 c, float r, int type, int ptr) {
 
 bool hitSphere(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecord hitRecord) {
     vec3 oc = ray.origin - sphere.center;
-	
-	float a = dot(ray.direction, ray.direction);
-	float b = 2.0 * dot(oc, ray.direction);
-	float c = dot(oc, oc) - sphere.radius * sphere.radius;
+
+    float a = dot(ray.direction, ray.direction);
+    float b = 2.0 * dot(oc, ray.direction);
+    float c = dot(oc, oc) - sphere.radius * sphere.radius;
 
     // 0, 1 or 2 roots
-	float delta = b * b - 4 * a * c;
+    float delta = b * b - 4 * a * c;
 
     if (delta > 0.0) { // 2 roots
         float temp = (-b - sqrt(delta)) / (2.0 * a); // nearest hit
@@ -160,7 +160,7 @@ bool hitSphere(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecord
 
             hitRecord.material_ptr = sphere.material_ptr; // 材质数组的下标
             hitRecord.material_type = sphere.material_type; // 记录材质的类型
-            
+
             return true;
         }
 
@@ -182,21 +182,21 @@ bool hitSphere(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecord
 
 
 vec3 random_in_unit_sphere() {
-	vec3 p;
-	
-	float theta = rand() * 2.0 * PI;
-	float phi   = rand() * PI;
-	p.y = cos(phi);
-	p.x = sin(phi) * cos(theta);
-	p.z = sin(phi) * sin(theta);
-	
-	return p;
+    vec3 p;
+
+    float theta = rand() * 2.0 * PI;
+    float phi   = rand() * PI;
+    p.y = cos(phi);
+    p.x = sin(phi) * cos(theta);
+    p.z = sin(phi) * sin(theta);
+
+    return p;
 }
 
 // ---material
 // 漫反射
 struct Lambertian{
-	vec3 albedo; // color
+    vec3 albedo; // color
 };
 
 // 金属
@@ -216,35 +216,35 @@ Metallic metallicMaterials[4];
 Dielectric dielectricMaterials[4];
 
 Lambertian makeLambertian(vec3 albedo){
-	Lambertian lambertian;
+    Lambertian lambertian;
 
-	lambertian.albedo = albedo;
+    lambertian.albedo = albedo;
 
-	return lambertian;
+    return lambertian;
 }
 
 void lambertianScatter(in Lambertian lambertian,
-        in Ray incident,
-        in HitRecord hitRecord,
-        out Ray scattered,
-        out vec3 attenuation){
+in Ray incident,
+in HitRecord hitRecord,
+out Ray scattered,
+out vec3 attenuation){
     // return a color value
-	attenuation = lambertian.albedo;
+    attenuation = lambertian.albedo;
 
     // scattered ray
-	scattered.origin = hitRecord.position;
-	scattered.direction = hitRecord.normal + random_in_unit_sphere();
+    scattered.origin = hitRecord.position;
+    scattered.direction = hitRecord.normal + random_in_unit_sphere();
 }
 
 
 
 Metallic makeMetallic(vec3 albedo, float fuzz){
-	Metallic metallic;
+    Metallic metallic;
 
-	metallic.albedo = albedo;
-	metallic.fuzz = fuzz;
+    metallic.albedo = albedo;
+    metallic.fuzz = fuzz;
 
-	return metallic;
+    return metallic;
 }
 
 // return scattered vector
@@ -253,10 +253,10 @@ vec3 reflect(in vec3 v, in vec3 n) {
 }
 
 void metallicScatter(in Metallic metallic,
-        in Ray incident,
-        in HitRecord hitRecord,
-        out Ray scattered,
-        out vec3 attenuation) {
+in Ray incident,
+in HitRecord hitRecord,
+out Ray scattered,
+out vec3 attenuation) {
     attenuation = metallic.albedo;
 
     scattered.origin = hitRecord.position;
@@ -265,31 +265,31 @@ void metallicScatter(in Metallic metallic,
 
 
 Dielectric makeDielectric(vec3 albedo, float ior){
-	Dielectric dielectric;
+    Dielectric dielectric;
 
-	dielectric.albedo = albedo;
-	dielectric.ior = ior;
+    dielectric.albedo = albedo;
+    dielectric.ior = ior;
 
-	return dielectric;
+    return dielectric;
 }
 
-// TODO: 
+// TODO:
 bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted){
-	vec3 uv = normalize(v);
-	float dt = dot(uv, n);
-	float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
-	if (discriminant > 0.0){
-		refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
-		return true;
-	}
+    vec3 uv = normalize(v);
+    float dt = dot(uv, n);
+    float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+    if (discriminant > 0.0){
+        refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 float schlick(float cosine, float ior){
-	float r0 = (1 - ior) / (1 + ior);
-	r0 = r0 * r0;
-	return r0 + (1 - r0) * pow((1 - cosine), 5);
+    float r0 = (1 - ior) / (1 + ior);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
 void dielectricScatter(in Dielectric dielectric,
@@ -297,35 +297,35 @@ in Ray incident,
 in HitRecord hitRecord,
 out Ray scattered,
 out vec3 attenuation) {
-	attenuation = dielectric.albedo;
-	vec3 reflected = reflect(incident.direction, hitRecord.normal);
+    attenuation = dielectric.albedo;
+    vec3 reflected = reflect(incident.direction, hitRecord.normal);
 
-	vec3 outward_normal;
-	float ni_over_nt;
-	float cosine;
-	if (dot(incident.direction, hitRecord.normal) > 0.0) {//从内击中
-		outward_normal = -hitRecord.normal;
-		ni_over_nt = dielectric.ior;
-		cosine = dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
-	} else {// 从外击中
-		outward_normal = hitRecord.normal;
-		ni_over_nt = 1.0 / dielectric.ior;
-		cosine = -dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
-	}
+    vec3 outward_normal;
+    float ni_over_nt;
+    float cosine;
+    if (dot(incident.direction, hitRecord.normal) > 0.0) {//从内击中
+        outward_normal = -hitRecord.normal;
+        ni_over_nt = dielectric.ior;
+        cosine = dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
+    } else {// 从外击中
+        outward_normal = hitRecord.normal;
+        ni_over_nt = 1.0 / dielectric.ior;
+        cosine = -dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
+    }
 
-	float reflect_prob;
-	vec3 refracted;
-	if (refract(incident.direction, outward_normal, ni_over_nt, refracted)) {
-		reflect_prob = schlick(cosine, dielectric.ior);
-	} else {
-		reflect_prob = 1.0;
-	}
+    float reflect_prob;
+    vec3 refracted;
+    if (refract(incident.direction, outward_normal, ni_over_nt, refracted)) {
+        reflect_prob = schlick(cosine, dielectric.ior);
+    } else {
+        reflect_prob = 1.0;
+    }
 
-	if (rand() < reflect_prob) {
-		scattered = Ray(hitRecord.position, refracted);
-	} else {
-		scattered = Ray(hitRecord.position, refracted);
-	}
+    if (rand() < reflect_prob) {
+        scattered = Ray(hitRecord.position, refracted);
+    } else {
+        scattered = Ray(hitRecord.position, refracted);
+    }
 }
 
 
@@ -343,25 +343,25 @@ World makeWorld() {
 
     World world;
     world.objects[0] = makeSphere(
-            vec3(0, 0, -1),
-            0.5,
-            MAT_LAMBERTIAN,
-            0);
+    vec3(0, 0, -1),
+    0.5,
+    MAT_LAMBERTIAN,
+    0);
     world.objects[1] = makeSphere(
-            vec3(0, -100.5, -1.0),
-            100.0,
-            MAT_LAMBERTIAN,
-            1);
+    vec3(0, -100.5, -1.0),
+    100.0,
+    MAT_LAMBERTIAN,
+    1);
     world.objects[2] = makeSphere(
-            vec3(1.0, 0.0, -1.0),
-            0.5,
-            MAT_METALLIC,
-            0);
+    vec3(1.0, 0.0, -1.0),
+    0.5,
+    MAT_METALLIC,
+    0);
     world.objects[3] = makeSphere(
-            vec3(-1.0, 0.0, -1.0),
-            0.5,
-            MAT_DIELECTRIC,
-            0);
+    vec3(-1.0, 0.0, -1.0),
+    0.5,
+    MAT_DIELECTRIC,
+    0);
 
     world.object_count = 4;
 
@@ -436,16 +436,16 @@ vec3 rayTrace(Ray ray, int depth) {
 }
 
 Ray cameraGetRay(Camera camera, vec2 uv){
-	Ray ray = makeRay(camera.origin, 
-		camera.lower_left_corner + 
-		uv.x * camera.horizontal + 
-		uv.y * camera.vertical - camera.origin);
+    Ray ray = makeRay(camera.origin,
+    camera.lower_left_corner +
+    uv.x * camera.horizontal +
+    uv.y * camera.vertical - camera.origin);
 
-	return ray;
+    return ray;
 }
 
 vec3 gammaCorrection(vec3 c){
-	return pow(c, vec3(1.0 / 2.2));
+    return pow(c, vec3(1.0 / 2.2));
 }
 
 

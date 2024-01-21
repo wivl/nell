@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "shader.hpp"
+#include "nell/core/shader_utils/shader.hpp"
 
 #define WIDTH 1600
 #define HEIGHT 800
@@ -48,7 +48,7 @@ void render_set() {
 
 }
 
-void render_image(Shader shader) {
+void render_image(nell::Shader shader) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -85,7 +85,7 @@ int main() {
         return -1;
     }
 
-    Shader pathtracingShader = Shader("../src/shader/vertex.glsl", "../src/shader/fragment.glsl");
+    nell::Shader pathtracingShader = nell::Shader("../src/shader/vertex.glsl", "../src/shader/fragment.glsl");
 
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.lower_left_corner"), -2.0, -1.0, -1.0);
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.horizontal"), 4.0, 0.0, 0.0);

@@ -85,7 +85,7 @@ int main() {
         return -1;
     }
 
-    nell::Shader pathtracingShader = nell::Shader("../src/shader/vertex.glsl", "../src/shader/fragment.glsl");
+    nell::Shader pathtracingShader = nell::Shader("../src/shader/pathtrace.vert", "../src/shader/pathtrace.frag");
 
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.lower_left_corner"), -2.0, -1.0, -1.0);
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.horizontal"), 4.0, 0.0, 0.0);

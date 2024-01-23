@@ -91,6 +91,7 @@ struct Camera {
     float lens_radius;
 };
 
+uniform Camera camera;
 
 // TODO: 临时编写的构造函数，后期使用 uniform 赋值
 Camera Camera_make(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist) {
@@ -452,7 +453,7 @@ vec3 gamma_correction(vec3 c){
     return pow(c, vec3(1.0 / 2.2));
 }
 
-
+//uniform vec2 screen_size;
 
 void main() {
     float u = screenCoord.x; // 0 ~ 1
@@ -460,15 +461,15 @@ void main() {
 
     wseed = uint(float(69557857) * (screenCoord.x * screenCoord.y));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
-
-    float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 lookfrom = vec3(13, 2, 3);
-    vec3 lookat = vec3(0, 0, 0);
-    vec3 vup = vec3(0, 1, 0);
-    float dist_to_focus = length(lookat-lookfrom);
-    float aperture = 0.0;
-
-    Camera camera = Camera_make(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+//
+//    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 lookfrom = vec3(13, 2, 3);
+//    vec3 lookat = vec3(0, 0, 0);
+//    vec3 vup = vec3(0, 1, 0);
+//    float dist_to_focus = length(lookat-lookfrom);
+//    float aperture = 0.0;
+//
+//    Camera camera = Camera_make(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
 
 
     vec3 color = vec3(0.0, 0.0, 0.0);

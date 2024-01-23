@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include "nell/core/shader_utils/shader.hpp"
+#include "nell/core/camera.hpp"
 
 #define WIDTH 1600
 #define HEIGHT 800
@@ -87,11 +88,43 @@ int main() {
 
     nell::Shader pathtracingShader = nell::Shader("../src/shader/pathtrace.vert", "../src/shader/pathtrace.frag");
 
+    vec2 screen_size = vec2(WIDTH, HEIGHT);
+
+    float aspect_ratio = screen_size.x / screen_size.y;
+    vec3 lookfrom = vec3(13, 2, 3);
+    vec3 lookat = vec3(0, 0, 0);
+    vec3 vup = vec3(0, 1, 0);
+    float dist_to_focus = length(lookat-lookfrom);
+    float aperture = 0.0;
+
+    nell::Camera camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+    camera.sync(pathtracingShader.id);
+
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.lower_left_corner"), -2.0, -1.0, -1.0);
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.horizontal"), 4.0, 0.0, 0.0);
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.vertical"), 0.0, 2.0, 0.0);
     // glUniform3f(glGetUniformLocation(pathtracingShader.id, "camera.origin"), 0.0, 0.0, 0.0);
 
+#ifdef FRAMEBUFFER
+    // frame buffer
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // texture
+    unsigned int tex_color_buffer;
+    glGenTextures(1, &tex_color_buffer);
+    glBindTexture(GL_TEXTURE_2D, tex_color_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_buffer, 0);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 
     render_set();
 
@@ -102,6 +135,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         pathtracingShader.use();
+        camera.sync(pathtracingShader.id);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

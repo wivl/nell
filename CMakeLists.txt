@@ -9,8 +9,8 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/nell/core/shader_utils/*.cpp)
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp src/nell/core/shader_utils/*.hpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/nell/core/camera.cpp src/nell/core/shader_utils/*.cpp)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp src/nell/core/camera.hpp src/nell/core/shader_utils/*.hpp)
 
 
 # DEPENDENCIES

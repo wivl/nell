@@ -119,16 +119,16 @@ Camera Camera_make(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspec
 }
 
 Ray Camera_get_ray(Camera camera, vec2 uv){
-//    vec3 rd = camera.lens_radius * random_in_unit_disk();
-//    vec3 offset = camera.u * rd.x + camera.v * rd.y;
-//    Ray ray = Ray_make(camera.origin + offset,
-//                       camera.lower_left_corner +
-//                       uv.x * camera.horizontal +
-//                       uv.y * camera.vertical - camera.origin);
-    Ray ray = Ray_make(camera.origin,
-                   camera.lower_left_corner +
-                   uv.x * camera.horizontal +
-                   uv.y * camera.vertical - camera.origin);
+    vec3 rd = camera.lens_radius * random_in_unit_disk();
+    vec3 offset = camera.u * rd.x + camera.v * rd.y;
+    Ray ray = Ray_make(camera.origin + offset,
+                       camera.lower_left_corner +
+                       uv.x * camera.horizontal +
+                       uv.y * camera.vertical - camera.origin);
+//    Ray ray = Ray_make(camera.origin,
+//                   camera.lower_left_corner +
+//                   uv.x * camera.horizontal +
+//                   uv.y * camera.vertical - camera.origin);
 
     return ray;
 }
@@ -466,7 +466,7 @@ void main() {
     vec3 lookat = vec3(0, 0, 0);
     vec3 vup = vec3(0, 1, 0);
     float dist_to_focus = length(lookat-lookfrom);
-    float aperture = 0.1;
+    float aperture = 0.0;
 
     Camera camera = Camera_make(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
 

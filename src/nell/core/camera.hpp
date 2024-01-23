@@ -26,8 +26,10 @@ namespace nell {
         float focus_dist;
 
         void update();
-        void sync(unsigned int shader_id) const;
+        void sync(unsigned int shader_id);
         void update_and_sync(unsigned int shader_id);
+
+        float loop;
 
     public:
         Camera(vec3 lookfrom,

@@ -1,13 +1,15 @@
-#version 330 core
+#version 410 core
 
 #define WIDTH 1600
 #define HEIGHT 800
 
 #define PI 3.1415926535
 
-in vec2 screenCoord;
+in vec2 ScreenCoords;
 
 out vec4 FragColor;
+
+
 
 
 // ---random
@@ -89,6 +91,8 @@ struct Camera {
     vec3 origin;
     vec3 u, v, w;
     float lens_radius;
+
+    uint loop;
 };
 
 uniform Camera camera;
@@ -456,10 +460,11 @@ vec3 gamma_correction(vec3 c){
 //uniform vec2 screen_size;
 
 void main() {
-    float u = screenCoord.x; // 0 ~ 1
-    float v = screenCoord.y; // 0 ~ 1
+    float u = ScreenCoords.x; // 0 ~ 1
+    float v = ScreenCoords.y; // 0 ~ 1
 
-    wseed = uint(float(69557857) * (screenCoord.x * screenCoord.y));
+    // TODO: 重写随机数种子从而获得随机结果
+    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 //
 //    float aspect_ratio = screen_size.x / screen_size.y;
@@ -473,9 +478,9 @@ void main() {
 
 
     vec3 color = vec3(0.0, 0.0, 0.0);
-    int spp = 100;
+    int spp = 1;
     for (int i = 0; i < spp; i++) {
-        Ray ray = Camera_get_ray(camera, screenCoord + rand2() / screen_size);
+        Ray ray = Camera_get_ray(camera, ScreenCoords + rand2() / screen_size);
         color += ray_trace(ray, 50);
     }
     color /= spp;

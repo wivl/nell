@@ -20,6 +20,8 @@ nell::Camera::Camera(vec3 lookfrom,
     this->aperture = aperture;
     this->focus_dist = focus_dist;
 
+    this->loop = 0.0f;
+
     // calculate
     this->lens_radius = aperture / 2;
 
@@ -37,8 +39,8 @@ nell::Camera::Camera(vec3 lookfrom,
         - half_height * focus_dist * v
         - focus_dist * w;
 
-    this->horizontal = 2 * half_width*focus_dist*u;
-    this->vertical = 2 * half_height*focus_dist*v;
+    this->horizontal = 2 * half_width*focus_dist * u;
+    this->vertical = 2 * half_height*focus_dist * v;
 }
 
 
@@ -70,11 +72,11 @@ void nell::Camera::update() {
                               - half_height * focus_dist * v
                               - focus_dist * w;
 
-    this->horizontal = 2 * half_width*focus_dist*u;
-    this->vertical = 2 * half_height*focus_dist*v;
+    this->horizontal = 2 * half_width*focus_dist * u;
+    this->vertical = 2 * half_height*focus_dist * v;
 }
 
-void nell::Camera::sync(unsigned int shader_id) const {
+void nell::Camera::sync(unsigned int shader_id) {
     glUniform3f(glGetUniformLocation(shader_id, "camera.lower_left_corner"),
                 this->lower_left_corner.x,
                 this->lower_left_corner.y,
@@ -105,6 +107,8 @@ void nell::Camera::sync(unsigned int shader_id) const {
                 this->w.z);
     glUniform1f(glGetUniformLocation(shader_id, "camera.horizontal"),
                 this->lens_radius);
+    this->loop = 0;
+
 }
 
 void nell::Camera::update_and_sync(unsigned int shader_id) {

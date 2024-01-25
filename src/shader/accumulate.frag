@@ -13,5 +13,6 @@ void main() {
     vec4 currentColor = texture(currentFrame, TexCoords);
     vec4 accColor = texture(accFrame, TexCoords);
     FragColor = mix(currentColor, accColor, mix_part);
-//    FragColor = currentColor;
+//    FragColor = currentColor * (1.0f - mix_part) + accColor * mix_part;
+//    FragColor = accColor;
 }

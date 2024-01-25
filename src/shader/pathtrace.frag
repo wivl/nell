@@ -13,7 +13,7 @@ out vec4 FragColor;
 
 
 // ---random
-// random algorithm by Thomas Wang
+
 uint wseed;
 float randcore(uint seed) {
     seed = (seed ^ uint(61)) ^ (seed >> uint(16));
@@ -23,6 +23,7 @@ float randcore(uint seed) {
     wseed = seed ^ (seed >> uint(15));
     return float(wseed) * (1.0 / 4294967296.0);
 }
+
 
 float rand() {
     return randcore(wseed);
@@ -51,6 +52,7 @@ vec3 random_in_unit_sphere() {
 
     return p;
 }
+
 
 vec3 random_in_unit_disk() {
     while (true) {
@@ -459,12 +461,15 @@ vec3 gamma_correction(vec3 c){
 
 //uniform vec2 screen_size;
 
+uniform float rand_origin;
+
 void main() {
     float u = ScreenCoords.x; // 0 ~ 1
     float v = ScreenCoords.y; // 0 ~ 1
 
     // TODO: 重写随机数种子从而获得随机结果
-    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y));
+//    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y));
+    wseed = uint(rand_origin * float(6.95857) * (ScreenCoords.x * ScreenCoords.y));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 //
 //    float aspect_ratio = screen_size.x / screen_size.y;

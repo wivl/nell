@@ -1,9 +1,11 @@
 #include <iostream>
+#include <thread>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "nell/core/shader_utils/shader.hpp"
 #include "nell/core/camera.hpp"
+#include "nell/core/random.hpp"
 
 #define WIDTH 1600
 #define HEIGHT 800
@@ -115,10 +117,10 @@ int main() {
     vec3 lookat = vec3(0, 0, 0);
     vec3 vup = vec3(0, 1, 0);
     float dist_to_focus = length(lookat-lookfrom);
-    float aperture = 0.0;
+    float aperture = 10.0;
 
     nell::Camera camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
-    camera.sync(pathtracing_shader.id);
+    camera.update_and_sync(pathtracing_shader.id);
 
     // Raytracer vao
     unsigned int rt_vao, rt_vbo, rt_ebo;
@@ -254,15 +256,22 @@ int main() {
     glUniform1i(glGetUniformLocation(acc_shader.id, "currentFrame"), 0);
     glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 1);
 
+    nell::CPURandomInit();
+
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
+//        std::this_thread::sleep_for(std::chrono::seconds(2));
         process_input(window);
         loop ++;
         float mix_part = (float(loop)-1.0f) / float(loop);
 //        printf("%d: %f\n", &loop, &mix_part);
-        std::cout << loop << ": " << mix_part << std::endl;
+//        auto time = static_cast<float>(glfwGetTime());
+        std::cout << "loop: " << loop << " mix: " << mix_part << std::endl;
 
         // raytracing pass
+        float rand_origin = 674764.0f * (nell::GetCPURandom() + 1.0f);
+        std::cout << rand_origin << std::endl;
+        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"), rand_origin);
         glBindFramebuffer(GL_FRAMEBUFFER, rt_result_buffer);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

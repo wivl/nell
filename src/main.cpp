@@ -262,17 +262,19 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
 //        std::this_thread::sleep_for(std::chrono::seconds(2));
         process_input(window);
-        loop ++;
+
         float mix_part = (float(loop)-1.0f) / float(loop);
 //        printf("%d: %f\n", &loop, &mix_part);
-//        auto time = static_cast<float>(glfwGetTime());
+        auto time = static_cast<float>(glfwGetTime());
         std::cout << "loop: " << loop << " mix: " << mix_part << std::endl;
 
         // raytracing pass
         float rand_origin = 674764.0f * (nell::GetCPURandom() + 1.0f);
-        std::cout << rand_origin << std::endl;
+        std::cout << time << std::endl;
         glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"), rand_origin);
-        glBindFramebuffer(GL_FRAMEBUFFER, rt_result_buffer);
+        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "time"), time);
+        glBindFramebuffer(GL_FRAMEBUFFER, rt_result_buffer); // TODO: uncomment this
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -286,7 +288,8 @@ int main() {
         // acc
         glBindFramebuffer(GL_FRAMEBUFFER, acc_framebuffer); // 设置输出为 acc_framebuffer
         acc_shader.use();
-        glUniform1f(glGetUniformLocation(acc_shader.id, "mix_part"), mix_part);
+//        glUniform1f(glGetUniformLocation(acc_shader.id, "mix_part"), mix_part);
+        glUniform1i(glGetUniformLocation(acc_shader.id, "loop_count"), loop);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rt_texture);
         glActiveTexture(GL_TEXTURE1);
@@ -295,11 +298,16 @@ int main() {
 
 //         preview
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
         preview_shader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, acc_texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+
+
+        loop ++;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

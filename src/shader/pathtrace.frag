@@ -15,13 +15,23 @@ out vec4 FragColor;
 // ---random
 
 uint wseed;
-float randcore(uint seed) {
+float randcore(inout uint seed) {
     seed = (seed ^ uint(61)) ^ (seed >> uint(16));
     seed *= uint(9);
     seed = seed ^ (seed >> uint(4));
     seed *= uint(0x27d4eb2d);
     wseed = seed ^ (seed >> uint(15));
     return float(wseed) * (1.0 / 4294967296.0);
+}
+
+uint wang_hash(inout uint seed)
+{
+    seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
+    seed *= uint(9);
+    seed = seed ^ (seed >> 4);
+    seed *= uint(0x27d4eb2d);
+    seed = seed ^ (seed >> 15);
+    return seed;
 }
 
 
@@ -126,16 +136,16 @@ Camera Camera_make(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspec
 }
 
 Ray Camera_get_ray(Camera camera, vec2 uv){
-    vec3 rd = camera.lens_radius * random_in_unit_disk();
-    vec3 offset = camera.u * rd.x + camera.v * rd.y;
-    Ray ray = Ray_make(camera.origin + offset,
-                       camera.lower_left_corner +
-                       uv.x * camera.horizontal +
-                       uv.y * camera.vertical - camera.origin);
-//    Ray ray = Ray_make(camera.origin,
-//                   camera.lower_left_corner +
-//                   uv.x * camera.horizontal +
-//                   uv.y * camera.vertical - camera.origin);
+//    vec3 rd = camera.lens_radius * random_in_unit_disk();
+//    vec3 offset = camera.u * rd.x + camera.v * rd.y;
+//    Ray ray = Ray_make(camera.origin + offset,
+//                       camera.lower_left_corner +
+//                       uv.x * camera.horizontal +
+//                       uv.y * camera.vertical - camera.origin);
+    Ray ray = Ray_make(camera.origin,
+                   camera.lower_left_corner +
+                   uv.x * camera.horizontal +
+                   uv.y * camera.vertical - camera.origin);
 
     return ray;
 }
@@ -462,25 +472,16 @@ vec3 gamma_correction(vec3 c){
 //uniform vec2 screen_size;
 
 uniform float rand_origin;
+uniform float time;
 
 void main() {
     float u = ScreenCoords.x; // 0 ~ 1
     float v = ScreenCoords.y; // 0 ~ 1
 
     // TODO: 重写随机数种子从而获得随机结果
-//    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y));
-    wseed = uint(rand_origin * float(6.95857) * (ScreenCoords.x * ScreenCoords.y));
+//    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y) + fract(time));
+    wseed = uint(rand_origin * float(6.95857) * (ScreenCoords.x * ScreenCoords.y) + fract(time));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
-//
-//    float aspect_ratio = screen_size.x / screen_size.y;
-//    vec3 lookfrom = vec3(13, 2, 3);
-//    vec3 lookat = vec3(0, 0, 0);
-//    vec3 vup = vec3(0, 1, 0);
-//    float dist_to_focus = length(lookat-lookfrom);
-//    float aperture = 0.0;
-//
-//    Camera camera = Camera_make(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
-
 
     vec3 color = vec3(0.0, 0.0, 0.0);
     int spp = 1;

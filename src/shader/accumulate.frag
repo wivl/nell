@@ -10,8 +10,9 @@ uniform int loop_count;
 
 
 void main() {
-    vec4 currentColor = texture(currentFrame, TexCoords);
-    vec4 accColor = texture(accFrame, TexCoords);
+    vec3 currentColor = texture(currentFrame, TexCoords).rgb;
+    vec3 accColor = texture(accFrame, TexCoords).rgb;
 //    FragColor = mix(currentColor, accColor, mix_part);
-    FragColor = (accColor * loop_count + currentColor) / (loop_count + 1);
+    vec3 color = (accColor * float(loop_count) + currentColor) / (float(loop_count) + 1.0);
+    FragColor = vec4(color, 1.0);
 }

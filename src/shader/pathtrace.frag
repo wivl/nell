@@ -5,7 +5,7 @@
 
 #define PI 3.1415926535
 
-in vec2 ScreenCoords;
+in vec2 TexCoords;
 
 out vec4 FragColor;
 
@@ -475,18 +475,18 @@ uniform float rand_origin;
 uniform float time;
 
 void main() {
-    float u = ScreenCoords.x; // 0 ~ 1
-    float v = ScreenCoords.y; // 0 ~ 1
+    float u = TexCoords.x; // 0 ~ 1
+    float v = TexCoords.y; // 0 ~ 1
 
     // TODO: 重写随机数种子从而获得随机结果
 //    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y) + fract(time));
-    wseed = uint(rand_origin * float(6.95857) * (ScreenCoords.x * ScreenCoords.y) + fract(time));
+    wseed = uint(rand_origin * float(6.95857) * (TexCoords.x * TexCoords.y) + fract(time));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     vec3 color = vec3(0.0, 0.0, 0.0);
-    int spp = 1;
+    int spp = 5;
     for (int i = 0; i < spp; i++) {
-        Ray ray = Camera_get_ray(camera, ScreenCoords + rand2() / screen_size);
+        Ray ray = Camera_get_ray(camera, TexCoords + rand2() / screen_size);
         color += ray_trace(ray, 50);
     }
     color /= spp;

@@ -122,7 +122,6 @@ int main() {
 
     nell::Shader pathtracing_shader = nell::Shader("../src/shader/default.vert", "../src/shader/pathtrace.frag");
     nell::Shader acc_shader = nell::Shader("../src/shader/default.vert", "../src/shader/accumulate.frag");
-    nell::Shader copy_shader = nell::Shader("../src/shader/default.vert", "../src/shader/copy.frag");
     nell::Shader preview_shader = nell::Shader("../src/shader/default.vert", "../src/shader/preview.frag");
 
     vec2 screen_size = vec2(WIDTH, HEIGHT);

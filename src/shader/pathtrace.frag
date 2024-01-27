@@ -24,17 +24,6 @@ float randcore(inout uint seed) {
     return float(wseed) * (1.0 / 4294967296.0);
 }
 
-uint wang_hash(inout uint seed)
-{
-    seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
-    seed *= uint(9);
-    seed = seed ^ (seed >> 4);
-    seed *= uint(0x27d4eb2d);
-    seed = seed ^ (seed >> 15);
-    return seed;
-}
-
-
 float rand() {
     return randcore(wseed);
 }
@@ -479,12 +468,12 @@ void main() {
     float v = TexCoords.y; // 0 ~ 1
 
     // TODO: 重写随机数种子从而获得随机结果
-//    wseed = uint(float(69557857) * (ScreenCoords.x * ScreenCoords.y) + fract(time));
+//    wseed = uint(float(69557857) * (TexCoords.x * TexCoords.y) + fract(time));
     wseed = uint(rand_origin * float(6.95857) * (TexCoords.x * TexCoords.y) + fract(time));
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     vec3 color = vec3(0.0, 0.0, 0.0);
-    int spp = 5;
+    int spp = 1;
     for (int i = 0; i < spp; i++) {
         Ray ray = Camera_get_ray(camera, TexCoords + rand2() / screen_size);
         color += ray_trace(ray, 50);

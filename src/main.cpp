@@ -139,32 +139,53 @@ int main() {
 
 
 
-    unsigned int rt_texture;
-    glGenTextures(1, &rt_texture);
-    nell::Framebuffer rt_fb(WIDTH, HEIGHT, rt_texture);
+    unsigned int pt_texture, pt_framebuffer;
+    glGenTextures(1, &pt_texture);
+    glBindTexture(GL_TEXTURE_2D, pt_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &pt_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, pt_framebuffer);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           pt_texture, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                  << std::endl;
+    }
 
 
-    unsigned int acc_texture;
+    unsigned int acc_texture, acc_framebuffer;
     glGenTextures(1, &acc_texture);
-    nell::Framebuffer acc_fb(WIDTH, HEIGHT, acc_texture);
+    glBindTexture(GL_TEXTURE_2D, acc_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
+    glGenFramebuffers(1, &acc_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, acc_framebuffer);
 
-    unsigned int acc2_texture;
-    glGenTextures(1, &acc2_texture);
-    nell::Framebuffer acc2_fb(WIDTH, HEIGHT, acc2_texture);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           acc_texture, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                  << std::endl;
+    }
 
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, rt_texture);
+    glBindTexture(GL_TEXTURE_2D, pt_texture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, acc_texture);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, acc2_texture);
 
     glUniform1i(glGetUniformLocation(acc_shader.id, "currentFrame"), 0);
-    glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 2);
-    glUniform1i(glGetUniformLocation(copy_shader.id, "accFrame"), 1);
-    glUniform1i(glGetUniformLocation(preview_shader.id, "screenFrame"), 1);
+    glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 1);
+    glUniform1i(glGetUniformLocation(preview_shader.id, "frame"), 1);
 
 
 
@@ -172,50 +193,36 @@ int main() {
 
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
-//        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         process_input(window);
-
-        float mix_part = (float(loop)-1.0f) / float(loop);
-//        printf("%d: %f\n", &loop, &mix_part);
-        auto time = static_cast<float>(glfwGetTime());
-//        std::cout << "loop: " << loop << " mix: " << mix_part << std::endl;
-
-
         float rand_origin = 674764.0f * (nell::GetCPURandom() + 1.0f);
-//        std::cout << time << std::endl;
-        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"), rand_origin);
-        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "time"), time);
+        auto time = static_cast<float>(glfwGetTime());
+        // std::cout << time << " " << rand_origin << std::endl;
 
-
-        // raytracing pass
-        glBindFramebuffer(GL_FRAMEBUFFER, rt_fb.id);
-//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_FRAMEBUFFER, pt_framebuffer);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
         pathtracing_shader.use();
         camera.sync(pathtracing_shader.id);
+
+        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "time"), time);
+        glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"), rand_origin);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
-        // acc
-        glBindFramebuffer(GL_FRAMEBUFFER, acc_fb.id);
+        glBindFramebuffer(GL_FRAMEBUFFER, acc_framebuffer);
         acc_shader.use();
-        glUniform1i(glGetUniformLocation(acc_shader.id, "loop_count"), loop);
+        glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 1);
+        glUniform1i(glGetUniformLocation(acc_shader.id, "currentFrame"), 0);
+        glUniform1i(glGetUniformLocation(acc_shader.id, "loop"), loop);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
-        // copy
-        glBindFramebuffer(GL_FRAMEBUFFER, acc2_fb.id);
-        copy_shader.use();
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
-        // preview
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
         preview_shader.use();
+        glUniform1i(glGetUniformLocation(preview_shader.id, "frame"), 1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 

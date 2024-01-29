@@ -192,7 +192,7 @@ int main() {
 
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+//        std::this_thread::sleep_for(std::chrono::seconds(2));
         process_input(window);
         float rand_origin = 674764.0f * (nell::GetCPURandom() + 1.0f);
         auto time = static_cast<float>(glfwGetTime());

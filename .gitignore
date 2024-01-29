@@ -1,4 +1,6 @@
 build
+cmake-build-debug
+.idea
 .cache
 *.DS_Store
 # Prerequisites

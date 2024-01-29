@@ -1,9 +1,10 @@
 #pragma once
 
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include <string>
 
-class Shader {
+namespace nell {
+    class Shader {
     public:
         unsigned int id;
 
@@ -14,4 +15,6 @@ class Shader {
         void set_float(const std::string &name, float value) const;
 
         void set_vec4(const std::string &name, float x, float y, float z, float w) const;
-};
+    };
+}
+

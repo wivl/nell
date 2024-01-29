@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 
+#include "Shadinclude.hpp"
 
 std::string get_file_contents(const char* filename) {
     std::ifstream in(filename, std::ios::binary);
@@ -19,32 +20,11 @@ std::string get_file_contents(const char* filename) {
     throw(errno);
 }
 
-Shader::Shader(const char *v_path, const char *f_path) {
+nell::Shader::Shader(const char *v_path, const char *f_path) {
     // get glsl source
-    std::string v_code_string;
-    std::string f_code_string;
-    std::ifstream v_shader_file;
-    std::ifstream f_shader_file;
+    std::string v_code_string = Shadinclude::load(v_path);
+    std::string f_code_string = Shadinclude::load(f_path);
 
-    v_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    f_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    try {
-        v_shader_file.open(v_path);
-        f_shader_file.open(f_path);
-        std::stringstream v_shader_stream, f_shader_stream;
-
-        v_shader_stream << v_shader_file.rdbuf();
-        f_shader_stream << f_shader_file.rdbuf();
-
-        v_shader_file.close();
-        f_shader_file.close();
-
-        v_code_string = v_shader_stream.str();
-        f_code_string = f_shader_stream.str();
-
-    } catch(std::ifstream::failure e) {
-        std::cout << "[error]shader: file not succesfully read" << std::endl;
-    }
     const char *v_shader_source = v_code_string.c_str();
     const char *f_shader_source = f_code_string.c_str();
 
@@ -90,21 +70,21 @@ Shader::Shader(const char *v_path, const char *f_path) {
     glDeleteShader(fragment);
 }
 
-void Shader::use() {
+void nell::Shader::use() {
     glUseProgram(this->id);
 }
 
-void Shader::set_bool(const std::string &name, bool value) const {
+void nell::Shader::set_bool(const std::string &name, bool value) const {
     glUniform1i(glGetUniformLocation(this->id, name.c_str()), (int)value);
 } 
 
-void Shader::set_int(const std::string &name, int value) const {
+void nell::Shader::set_int(const std::string &name, int value) const {
     glUniform1i(glGetUniformLocation(this->id, name.c_str()), value);
 }
-void Shader::set_float(const std::string &name, float value) const {
+void nell::Shader::set_float(const std::string &name, float value) const {
     glUniform1f(glGetUniformLocation(this->id, name.c_str()), value);
 }
 
-void Shader::set_vec4(const std::string &name, float x, float y, float z, float w) const {
+void nell::Shader::set_vec4(const std::string &name, float x, float y, float z, float w) const {
     glUniform4f(glGetUniformLocation(this->id, name.c_str()), x, y, z, w);
 }

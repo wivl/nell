@@ -13,7 +13,7 @@ out vec4 FragColor;
 
 
 // ---random
-
+// [0， 1)
 uint wseed;
 float randcore(inout uint seed) {
     seed = (seed ^ uint(61)) ^ (seed >> uint(16));
@@ -28,15 +28,15 @@ float rand() {
     return randcore(wseed);
 }
 
-vec2 rand2(){
+vec2 rand2() {
     return vec2(rand(), rand());
 }
 
-vec3 rand3(){
+vec3 rand3() {
     return vec3(rand(), rand(), rand());
 }
 
-vec4 rand4(){
+vec4 rand4() {
     return vec4(rand(), rand(), rand(), rand());
 }
 
@@ -125,16 +125,16 @@ Camera Camera_make(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspec
 }
 
 Ray Camera_get_ray(Camera camera, vec2 uv){
-//    vec3 rd = camera.lens_radius * random_in_unit_disk();
-//    vec3 offset = camera.u * rd.x + camera.v * rd.y;
-//    Ray ray = Ray_make(camera.origin + offset,
-//                       camera.lower_left_corner +
-//                       uv.x * camera.horizontal +
-//                       uv.y * camera.vertical - camera.origin);
-    Ray ray = Ray_make(camera.origin,
-                   camera.lower_left_corner +
-                   uv.x * camera.horizontal +
-                   uv.y * camera.vertical - camera.origin);
+    vec3 rd = camera.lens_radius * random_in_unit_disk();
+    vec3 offset = camera.u * rd.x + camera.v * rd.y;
+    Ray ray = Ray_make(camera.origin + offset,
+                       camera.lower_left_corner +
+                       uv.x * camera.horizontal +
+                       uv.y * camera.vertical - camera.origin);
+//    Ray ray = Ray_make(camera.origin,
+//                   camera.lower_left_corner +
+//                   uv.x * camera.horizontal +
+//                   uv.y * camera.vertical - camera.origin);
 
     return ray;
 }
@@ -234,7 +234,7 @@ Lambertian lambert_materials[4];
 Metallic metallic_materials[4];
 Dielectric dielectric_materials[4];
 
-Lambertian Material_lambertian_make(vec3 albedo){
+Lambertian Material_lambertian_make(vec3 albedo) {
     Lambertian lambertian;
 
     lambertian.albedo = albedo;
@@ -246,7 +246,7 @@ void Material_lambertian_scatter(in Lambertian lambertian,
 in Ray incident,
 in HitRecord hitRecord,
 out Ray scattered,
-out vec3 attenuation){
+out vec3 attenuation) {
     // return a color value
     attenuation = lambertian.albedo;
 

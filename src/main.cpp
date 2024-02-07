@@ -7,6 +7,7 @@
 #include "nell/core/framebuffer.hpp"
 #include "nell/core/random.hpp"
 #include "nell/core/shader_utils/shader.hpp"
+#include "nell/core/mesh.hpp"
 
 #define WIDTH 1600
 #define HEIGHT 800
@@ -46,6 +47,8 @@ int main() {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    nell::Model model("./dragon.obj");
 
     float vertices[] = {
             1.0f, 1.0f, 1.0, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f,

@@ -17,6 +17,7 @@ namespace nell {
     struct Texture {
         unsigned int id;
         std::string type;
+        std::string path;
     };
 
     class Mesh {
@@ -35,6 +36,7 @@ namespace nell {
     class Model {
     private:
         std::vector<Mesh> meshes;
+        std::vector<Texture> textures_loaded;
         std::string directory;
 
         void load_model(std::string path);

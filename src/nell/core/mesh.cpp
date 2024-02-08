@@ -1,7 +1,6 @@
 #include "mesh.hpp"
-#include <stb/stb_image.h>
 #include <glad/glad.h>
-#include <cstddef>
+#include <stb_image.h>
 #include <iostream>
 
 void nell::Mesh::setup() {

@@ -9,13 +9,27 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/nell/core/*.cpp src/nell/core/shader_utils/*.cpp)
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp src/nell/core/*.hpp src/nell/core/shader_utils/*.hpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+        src/*.cpp
+        src/nell/core/*.cpp
+        src/nell/core/shader_utils/*.cpp
+        # stb
+        ${CMAKE_SOURCE_DIR}/dependencies/stb/*.cpp
+        )
+
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
+        src/*.hpp
+        src/nell/core/*.hpp
+        src/nell/core/shader_utils/*.hpp
+        # stb
+        ${CMAKE_SOURCE_DIR}/dependencies/stb/*.h
+        )
 
 
 # DEPENDENCIES
-add_library(stb STATIC dependencies/stb/stb_image.cpp)
-target_include_directories(stb PUBLIC dependencies/stb)
+include_directories(${CMAKE_SOURCE_DIR}/dependencies/stb)
+#add_library(stb STATIC dependencies/stb/stb_image.cpp)
+#target_include_directories(stb PUBLIC dependencies/stb)
 
 add_subdirectory(dependencies/glm)
 add_subdirectory(dependencies/glfw)

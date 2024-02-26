@@ -206,6 +206,75 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
     return false;
 }
 
+// ---triangle
+struct Triangle {
+    vec3 p[3];
+    vec3 n[3];
+    vec2 u[3];
+};
+
+Triangle Triangle_make() {
+    Triangle t;
+    // TODO: a demo triangle
+    t.p[0] = vec3(1, 0, -1);
+    t.p[1] = vec3(0, 1, -1);
+    t.p[2] = vec3(-1, 0, -1);
+
+    t.n[0] = vec3(0, 0, 1);
+    t.n[1] = vec3(0, 0, 1);
+    t.n[2] = vec3(0, 0, 1);
+
+    t.u[0] = vec2(0, 0);
+    t.u[1] = vec2(0, 0);
+    t.u[2] = vec2(0, 0);
+    return t;
+}
+
+bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout HitRecord hitRecord) {
+    // TODO: triangle hit
+    // using moller trumbore algorithm
+    // O + t * D = (1-b1-b2) * P0 + b1 * P1 + b2 * P2
+    vec3 e1 = triangle.p[1] - triangle.p[0];
+    vec3 e2 = triangle.p[2] - triangle.p[0];
+    vec3 s = ray.origin - triangle.p[0];
+    vec3 s1 = cross(ray.direction, e2);
+    vec3 s2 = cross(s, e1);
+
+    vec3 temp = vec3(
+            dot(s2, e2),
+            dot(s1, s),
+            dot(s2, ray.direction)
+    );
+
+    vec3 hit_result = (1.0/(s1*e1)) *  temp;
+    float t = hit_result.x;
+    float b1 = hit_result.y;
+    float b2 = hit_result.z;
+    float b0 = 1.0 - b1 - b2;
+
+    // test if hit result is available
+    if (t < 0) {
+        return false;
+    }
+    if (b1 < 0 || b2 < 0) {
+        return false;
+    }
+
+    hitRecord.t = t;
+    hitRecord.position = b0 * triangle.p[0] +
+                         b1 * triangle.p[1] +
+                         b2 * triangle.p[2];
+
+    hitRecord.normal = b0 * triangle.n[0] +
+                       b1 * triangle.n[1] +
+                       b2 * triangle.n[2];
+
+    // TODO: material
+    hitRecord.material_ptr = 0;
+    hitRecord.material_type = 0;
+    return true;
+}
+
 
 
 // --material
@@ -349,9 +418,14 @@ out vec3 attenuation) {
 
 // ---world
 struct World {
+    int type;
     int object_count;
     Sphere objects[100];
+    Triangle triangles[100];
 };
+
+#define WORLD_TYPE_SPHERE 0
+#define WORLD_TYPE_TRIANGLE 1
 
 World World_make() {
     lambert_materials[0] = Material_lambertian_make(vec3(0.1, 0.7, 0.7));
@@ -360,6 +434,7 @@ World World_make() {
     dielectric_materials[0] = Material_dielectric_make(vec3(1.0, 1.0, 1.0), 1.5);
 
     World world;
+    world.type = WORLD_TYPE_SPHERE;
     world.objects[0] = Sphere_make(
     vec3(0, 0, -1),
     0.5,
@@ -386,6 +461,16 @@ World World_make() {
     return world;
 }
 
+World Test_triangle_scene() {
+    lambert_materials[0] = Material_lambertian_make(vec3(0.1, 0.7, 0.7));
+
+    World world;
+    world.type = WORLD_TYPE_TRIANGLE;
+    world.triangles[0] = Triangle_make();
+    world.object_count = 1;
+    return world;
+}
+
 
 
 bool World_hit(World world, Ray ray, float t_min, float t_max, inout HitRecord hit_record) {
@@ -393,11 +478,21 @@ bool World_hit(World world, Ray ray, float t_min, float t_max, inout HitRecord h
     bool hit_anything = false;
     float t_close = t_max; // closest do far
 
-    for (int i = 0; i < world.object_count; i++) {
-        if (Sphere_hit(ray, world.objects[i], t_min, t_close, temp_record)) {
-            hit_record = temp_record;
-            hit_anything = true;
-            t_close = hit_record.t;
+    if (world.type == WORLD_TYPE_SPHERE) {
+        for (int i = 0; i < world.object_count; i++) {
+            if (Sphere_hit(ray, world.objects[i], t_min, t_close, temp_record)) {
+                hit_record = temp_record;
+                hit_anything = true;
+                t_close = hit_record.t;
+            }
+        }
+    } else if (world.type == WORLD_TYPE_TRIANGLE) {
+        for (int i = 0; i < world.object_count; i++) {
+            if (Triangle_hit(ray, world.triangles[i], t_min, t_close, temp_record)) {
+                hit_record = temp_record;
+                hit_anything = true;
+                t_close = hit_record.t;
+            }
         }
     }
 
@@ -417,6 +512,7 @@ vec3 get_environemnt_color(Ray ray){
 vec3 ray_trace(Ray ray, int depth) {
 
     World world = World_make();
+    // World world = Test_triangle_scene();
 
     HitRecord hit_record;
 

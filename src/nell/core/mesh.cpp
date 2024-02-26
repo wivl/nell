@@ -3,7 +3,7 @@
 #include <stb_image.h>
 #include <iostream>
 
-void nell::Mesh::setup() {
+//void nell::Mesh::setup() {
 //    glGenVertexArrays(1, &vao);
 //    glGenBuffers(1, &vbo);
 //    glGenBuffers(1, &ebo);
@@ -28,14 +28,14 @@ void nell::Mesh::setup() {
 //    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texcoord));
 //
 //    glBindVertexArray(0);
-}
+//}
 
 nell::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
 
-    setup();
+    // setup();
 }
 
 void nell::Model::load_model(std::string path) {

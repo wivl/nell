@@ -10,6 +10,11 @@ in vec2 TexCoords;
 out vec4 FragColor;
 
 
+uniform sampler2D vertices;
+uniform sampler2D indices;
+uniform int vertices_num;
+uniform int indices_num;
+
 
 
 // ---random
@@ -231,7 +236,6 @@ Triangle Triangle_make() {
 }
 
 bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout HitRecord hitRecord) {
-    // TODO: triangle hit
     // using moller trumbore algorithm
     // O + t * D = (1-b1-b2) * P0 + b1 * P1 + b2 * P2
     vec3 e1 = triangle.p[1] - triangle.p[0];
@@ -273,6 +277,41 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     hitRecord.material_ptr = 0;
     hitRecord.material_type = 0;
     return true;
+}
+
+float get_texture_value(sampler2D t, float index) {
+    float row = (index+0.5) / textureSize(t, 0).x;
+    float y = (int(row)+0.5) / textureSize(t, 0).y;
+    float x = (index + 0.5 - int(row)*textureSize(t, 0).x) / textureSize(t, 0).x;
+    vec2 tex_coord = vec2(x, y);
+
+    return texture(t, tex_coord).x;
+}
+
+Triangle get_triangle(int index) {
+    Triangle triangle;
+    vec3 face;
+    face.x = get_texture_value(indices, float(index * 3));
+    face.y = get_texture_value(indices, float(index * 3 + 1));
+    face.z = get_texture_value(indices, float(index * 3 + 2));
+
+    triangle.p[0].x = get_texture_value(vertices, face.x *8.0);
+    triangle.p[0].y = get_texture_value(vertices, face.x *8.0 + 1.0);
+    triangle.p[0].z = get_texture_value(vertices, face.x *8.0 + 2.0);
+
+    triangle.p[1].x = get_texture_value(vertices, face.y *8.0);
+    triangle.p[1].y = get_texture_value(vertices, face.y *8.0 + 1.0);
+    triangle.p[1].z = get_texture_value(vertices, face.y *8.0 + 2.0);
+
+    triangle.p[2].x = get_texture_value(vertices, face.z *8.0);
+    triangle.p[2].y = get_texture_value(vertices, face.z *8.0 + 1.0);
+    triangle.p[2].z = get_texture_value(vertices, face.z *8.0 + 2.0);
+
+    return triangle;
+}
+
+vec3 get_triangle_normal(Triangle tri) {
+    return normalize(cross(tri.p[2] - tri.p[0], tri.p[1] - tri.p[0]));
 }
 
 
@@ -418,14 +457,9 @@ out vec3 attenuation) {
 
 // ---world
 struct World {
-    int type;
     int object_count;
     Sphere objects[100];
-    Triangle triangles[100];
 };
-
-#define WORLD_TYPE_SPHERE 0
-#define WORLD_TYPE_TRIANGLE 1
 
 World World_make() {
     lambert_materials[0] = Material_lambertian_make(vec3(0.1, 0.7, 0.7));
@@ -434,7 +468,6 @@ World World_make() {
     dielectric_materials[0] = Material_dielectric_make(vec3(1.0, 1.0, 1.0), 1.5);
 
     World world;
-    world.type = WORLD_TYPE_SPHERE;
     world.objects[0] = Sphere_make(
     vec3(0, 0, -1),
     0.5,
@@ -461,43 +494,37 @@ World World_make() {
     return world;
 }
 
-World Test_triangle_scene() {
-    lambert_materials[0] = Material_lambertian_make(vec3(0.1, 0.7, 0.7));
 
-    World world;
-    world.type = WORLD_TYPE_TRIANGLE;
-    world.triangles[0] = Triangle_make();
-    world.object_count = 1;
-    return world;
-}
-
-
+#define WORLD_TYPE_MESH
+// #define WORLD_TYPE_SPHERE
 
 bool World_hit(World world, Ray ray, float t_min, float t_max, inout HitRecord hit_record) {
     HitRecord temp_record;
     bool hit_anything = false;
-    float t_close = t_max; // closest do far
+    float t_close = t_max; // closest so far
 
-    if (world.type == WORLD_TYPE_SPHERE) {
-        for (int i = 0; i < world.object_count; i++) {
-            if (Sphere_hit(ray, world.objects[i], t_min, t_close, temp_record)) {
-                hit_record = temp_record;
-                hit_anything = true;
-                t_close = hit_record.t;
-            }
+#ifdef WORLD_TYPE_SPHERE
+    for (int i = 0; i < world.object_count; i++) {
+        if (Sphere_hit(ray, world.objects[i], t_min, t_close, temp_record)) {
+            hit_record = temp_record;
+            hit_anything = true;
+            t_close = hit_record.t;
         }
-    } else if (world.type == WORLD_TYPE_TRIANGLE) {
-        for (int i = 0; i < world.object_count; i++) {
-            if (Triangle_hit(ray, world.triangles[i], t_min, t_close, temp_record)) {
-                hit_record = temp_record;
-                hit_anything = true;
-                t_close = hit_record.t;
-            }
+    }
+#endif
+
+#ifdef WORLD_TYPE_MESH
+    for (int i = 0; i < indices_num / 3; i++) {
+        if (Triangle_hit(ray, get_triangle(i), t_min, t_close, temp_record)) {
+            hit_record = temp_record;
+            hit_anything = true;
+            t_close = hit_record.t;
         }
     }
 
-    return hit_anything;
+#endif
 
+    return hit_anything;
 }
 
 
@@ -510,7 +537,6 @@ vec3 get_environemnt_color(Ray ray){
 }
 
 vec3 ray_trace(Ray ray, int depth) {
-
     World world = World_make();
     // World world = Test_triangle_scene();
 

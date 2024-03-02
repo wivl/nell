@@ -5,6 +5,10 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <iostream>
+
+#include "texture_manager.hpp"
+#include "shader_utils/shader.hpp"
 
 namespace nell {
 
@@ -35,7 +39,7 @@ namespace nell {
 
     // one model can contain many meshes
     class Model {
-    private:
+    public:
         std::vector<Mesh> meshes;
 
         // all the shared textures needed in this model
@@ -61,4 +65,30 @@ namespace nell {
         }
 
     };
+
+    class GLMeshTexture {
+    public:
+        int indices_index; // GL_TEXTURE index
+        int vertices_index; // GL_TEXTURE index
+        unsigned int indices_id; // indices texture id
+        unsigned int vertices_id; // vertices texture id
+        int indices_size;
+        int vertices_size;
+
+        // TODO: generate opengl texture from mesh class
+        GLMeshTexture(TextureManager &tm, const Model &model) {
+            this->indices_index = tm.generate_texture();
+            this->vertices_index = tm.generate_texture();
+
+            std::cout << "[Nell][Debug]" << "GLMeshTexture::constructor" << ": "
+                      << "vertices index: " << vertices_index << " "
+                      << "indices index: " << indices_index << std::endl;
+        }
+
+        void setup(const Model &model, nell::Shader &shader);
+
+    private:
+        void model_to_texture(const Model &model, nell::Shader &shader);
+    };
+
 }

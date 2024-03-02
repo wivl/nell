@@ -180,3 +180,99 @@ std::vector<nell::Texture> nell::Model::load_material_textures(aiMaterial *mat, 
 
 
 
+void nell::GLMeshTexture::model_to_texture(const nell::Model &model, nell::Shader &shader) {
+    int data_size_f = 0;
+    int data_size_v = 0;
+
+    std::cout << "[Nell][Debug]" << "GLMeshTexture::model_to_texture" << ": "
+            << "mesh count: " << model.meshes.size() << std::endl;
+
+    for (int i = 0; i < model.meshes.size(); i++) {
+        data_size_f += model.meshes[i].indices.size();
+        data_size_v += model.meshes[i].vertices.size();
+    }
+    std::cout << "[Nell][Debug]" << "GLMeshTexture::model_to_texture" << ": "
+            << "data_size_f: " << data_size_f << " "
+            << "data_size_v: " << data_size_v << std::endl;
+
+    float vert_x_f = sqrtf(data_size_v);
+    int vert_x = ceilf(vert_x_f);
+    int vert_y = ceilf((float)data_size_v / (float)vert_x);
+    float face_x_f = sqrtf(data_size_f);
+    int face_x = ceilf(face_x_f);
+    int face_y = ceilf((float)data_size_f / (float)face_x);
+
+    float *vertex_array = new float[(3+3+2) * (vert_x*vert_y)];
+    float *face_array = new float[1 * (face_x*face_y)];
+
+    assert(vertex_array != nullptr);
+    assert(face_array != nullptr);
+
+    int v_index = 0;
+    int f_index = 0;
+
+    for (int i = 0; i < model.meshes.size(); i++) {
+        for (int j = 0; j < model.meshes[i].vertices.size(); j++) {
+
+            vertex_array[v_index * (8) + 0] = model.meshes[i].vertices[j].position.x;
+            vertex_array[v_index * (8) + 1] = model.meshes[i].vertices[j].position.y;
+            vertex_array[v_index * (8) + 2] = model.meshes[i].vertices[j].position.z;
+
+            vertex_array[v_index * (8) + 3] = model.meshes[i].vertices[j].normal.x;
+            vertex_array[v_index * (8) + 4] = model.meshes[i].vertices[j].normal.y;
+            vertex_array[v_index * (8) + 5] = model.meshes[i].vertices[j].normal.z;
+
+            vertex_array[v_index * (8) + 6] = model.meshes[i].vertices[j].texcoord.x;
+            vertex_array[v_index * (8) + 7] = model.meshes[i].vertices[j].texcoord.y;
+
+            v_index++;
+        }
+
+        for (int j = 0; j < model.meshes[i].indices.size(); j++) {
+            face_array[f_index] = model.meshes[i].indices[j];
+            f_index++;
+        }
+
+        this->indices_size = data_size_f;
+        this->vertices_size = data_size_v;
+
+        shader.use();
+
+        glGenTextures(1, &vertices_id);
+        glBindTexture(GL_TEXTURE_2D, vertices_id);
+        glTexImage2D(GL_TEXTURE, 0, GL_R32F, vert_x * 8, vert_y, 0, GL_RED, GL_FLOAT, vertex_array);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glUniform1i(glGetUniformLocation(shader.id, "vertices"), vertices_index);
+        glUniform1i(glGetUniformLocation(shader.id, "vertices_num"), vertices_size);
+
+        glGenTextures(1, &indices_id);
+        glBindTexture(GL_TEXTURE_2D, indices_id);
+        glTexImage2D(GL_TEXTURE, 0, GL_R32F, face_x, face_y, 0, GL_RED, GL_FLOAT, face_array);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glUniform1i(glGetUniformLocation(shader.id, "indices"), indices_index);
+        glUniform1i(glGetUniformLocation(shader.id, "indices_num"), indices_size);
+
+        delete[] vertex_array;
+        delete[] face_array;
+    }
+
+
+}
+
+void nell::GLMeshTexture::setup(const nell::Model &model, nell::Shader &shader) {
+    model_to_texture(model, shader);
+    glActiveTexture(GL_TEXTURE0 + this->vertices_index);
+    glBindTexture(GL_TEXTURE_2D, this->vertices_id);
+    glActiveTexture(GL_TEXTURE0 + this->indices_index);
+    glBindTexture(GL_TEXTURE_2D, this->indices_id);
+}

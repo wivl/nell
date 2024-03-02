@@ -8,6 +8,7 @@
 #include "nell/core/random.hpp"
 #include "nell/core/shader_utils/shader.hpp"
 #include "nell/core/mesh.hpp"
+#include "nell/core/texture_manager.hpp"
 
 #define WIDTH 1600
 #define HEIGHT 800
@@ -48,7 +49,6 @@ int main() {
         return -1;
     }
 
-    nell::Model model("./dragon.obj");
 
     float vertices[] = {
             1.0f, 1.0f, 1.0, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f,
@@ -99,6 +99,13 @@ int main() {
                         dist_to_focus);
     camera.update_and_sync(pathtracing_shader.id);
 
+    nell::Model model("./dragon_vrip.ply");
+    auto tm = nell::TextureManager();
+    auto model_texture = nell::GLMeshTexture(tm, model);
+    model_texture.setup(model, pathtracing_shader);
+
+    // setup framebuffer for progressive rendering
+
     unsigned int pt_texture, pt_framebuffer;
     glGenTextures(1, &pt_texture);
     glBindTexture(GL_TEXTURE_2D, pt_texture);
@@ -147,10 +154,14 @@ int main() {
     glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 1);
     glUniform1i(glGetUniformLocation(preview_shader.id, "frame"), 1);
 
+    // setup mesh
+
+
     nell::CPURandomInit();
 
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
+        std::cout << "[Nell][Debug]" << "Render loop count: " << loop << std::endl;
         //        std::this_thread::sleep_for(std::chrono::seconds(2));
         process_input(window);
         float rand_origin = 674764.0f * (nell::GetCPURandom() + 1.0f);
@@ -167,6 +178,7 @@ int main() {
         glUniform1f(glGetUniformLocation(pathtracing_shader.id, "time"), time);
         glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"),
                     rand_origin);
+        // TODO: fragment shader error
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, acc_framebuffer);

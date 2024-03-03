@@ -175,9 +175,10 @@ unsigned int GetMeshVFormatUnique(const aiMesh *pcMesh) {
     // tangents and bitangents
     if (pcMesh->HasTangentsAndBitangents()) iRet |= 0x4;
 
-
-    static_assert(8 >= AI_MAX_NUMBER_OF_COLOR_SETS);
-    static_assert(8 >= AI_MAX_NUMBER_OF_TEXTURECOORDS);
+#ifdef BOOST_STATIC_ASSERT
+    BOOST_STATIC_ASSERT(8 >= AI_MAX_NUMBER_OF_COLOR_SETS);
+    BOOST_STATIC_ASSERT(8 >= AI_MAX_NUMBER_OF_TEXTURECOORDS);
+#endif
 
     // texture coordinates
     unsigned int p = 0;

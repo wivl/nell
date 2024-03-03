@@ -230,8 +230,8 @@ void TerragenImporter::InternReadFile(const std::string &pFile,
         }
 
         // Get to the next chunk (4 byte aligned)
-        unsigned dtt = reader.GetCurrentPos() & 0x3;
-        if (dtt) {
+        unsigned dtt = reader.GetCurrentPos();
+        if (dtt & 0x3) {
             reader.IncPtr(4 - dtt);
         }
     }

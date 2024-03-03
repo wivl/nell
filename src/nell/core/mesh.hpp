@@ -6,6 +6,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <iostream>
+#include <vector>
 
 #include "texture_manager.hpp"
 #include "shader_utils/shader.hpp"

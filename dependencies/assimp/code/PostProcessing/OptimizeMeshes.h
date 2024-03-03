@@ -68,10 +68,11 @@ namespace Assimp    {
  */
 class OptimizeMeshesProcess : public BaseProcess {
 public:
-    // -------------------------------------------------------------------
-    /// The default class constructor / destructor.
+    /// @brief  The class constructor.
     OptimizeMeshesProcess();
-    ~OptimizeMeshesProcess() override = default;
+
+    /// @brief  The class destructor.
+    ~OptimizeMeshesProcess();
 
     /** @brief Internal utility to store additional mesh info
      */
@@ -93,14 +94,16 @@ public:
         unsigned int output_id;
     };
 
+public:
     // -------------------------------------------------------------------
-    bool IsActive( unsigned int pFlags) const override;
+    bool IsActive( unsigned int pFlags) const;
 
     // -------------------------------------------------------------------
-    void Execute( aiScene* pScene) override;
+    void Execute( aiScene* pScene);
 
     // -------------------------------------------------------------------
-    void SetupProperties(const Importer* pImp) override;
+    void SetupProperties(const Importer* pImp);
+
 
     // -------------------------------------------------------------------
     /** @brief Specify whether you want meshes with different

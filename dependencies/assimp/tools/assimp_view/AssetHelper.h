@@ -77,13 +77,6 @@ public:
         pcScene = NULL;
     }
 
-    // set the normal set to be used
-    void SetNormalSet(unsigned int iSet);
-
-    // flip all normal vectors
-    void FlipNormals();
-    void FlipNormalsInt();
-
     //---------------------------------------------------------------
     // default vertex data structure
     // (even if tangents, bitangents or normals aren't
@@ -228,8 +221,16 @@ public:
 
     // Specifies the normal set to be used
     unsigned int iNormalSet;
-};
 
+    // ------------------------------------------------------------------
+    // set the normal set to be used
+    void SetNormalSet(unsigned int iSet);
+
+    // ------------------------------------------------------------------
+    // flip all normal vectors
+    void FlipNormals();
+    void FlipNormalsInt();
+};
 } // namespace AssimpView
 
 #endif // !! IG

@@ -71,10 +71,8 @@ namespace Assimp    {
  */
 class OptimizeGraphProcess : public BaseProcess {
 public:
-    // -------------------------------------------------------------------
-    /// The default class constructor / destructor.
     OptimizeGraphProcess();
-    ~OptimizeGraphProcess() override = default;
+    ~OptimizeGraphProcess();
 
     // -------------------------------------------------------------------
     bool IsActive( unsigned int pFlags) const override;

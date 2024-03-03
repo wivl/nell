@@ -46,7 +46,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include <assimp/types.h>
 #include "MMDCpp14.h"
 
 namespace pmx
@@ -731,7 +730,7 @@ namespace pmx
 		std::unique_ptr<PmxAncherRigidBody []> anchers;
 		int pin_vertex_count;
 		std::unique_ptr<int []> pin_vertices;
-		AI_WONT_RETURN void Read(std::istream *stream, PmxSetting *setting) AI_WONT_RETURN_SUFFIX;
+		void Read(std::istream *stream, PmxSetting *setting);
 	};
 
 	class PmxModel

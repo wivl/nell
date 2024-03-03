@@ -98,12 +98,6 @@ namespace AssimpView {
 //-------------------------------------------------------------------------------
 // Function prototypes
 //-------------------------------------------------------------------------------
-class AssimpVew {
-public:
-    AssimpVew();
-    ~AssimpVew();
-};
-
 int InitD3D(void);
 int ShutdownD3D(void);
 int CreateDevice(bool p_bMultiSample, bool p_bSuperSample, bool bHW = true);

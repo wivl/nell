@@ -382,10 +382,11 @@ void Q3DImporter::InternReadFile(const std::string &pFile,
 
             // TODO
             goto outer;
-        }
+        } break;
 
         default:
             throw DeadlyImportError("Quick3D: Unknown chunk");
+            break;
         };
     }
 outer:

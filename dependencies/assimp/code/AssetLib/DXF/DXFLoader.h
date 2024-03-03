@@ -68,8 +68,8 @@ namespace DXF {
  */
 class DXFImporter : public BaseImporter {
 public:
-    DXFImporter() = default;
-    ~DXFImporter() override = default;
+    DXFImporter();
+    ~DXFImporter() override;
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.

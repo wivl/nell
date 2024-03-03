@@ -61,6 +61,10 @@ CalcTangentsProcess::CalcTangentsProcess() :
 }
 
 // ------------------------------------------------------------------------------------------------
+// Destructor, private as well
+CalcTangentsProcess::~CalcTangentsProcess() = default;
+
+// ------------------------------------------------------------------------------------------------
 // Returns whether the processing step is present in the given flag field.
 bool CalcTangentsProcess::IsActive(unsigned int pFlags) const {
     return (pFlags & aiProcess_CalcTangentSpace) != 0;

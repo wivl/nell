@@ -46,7 +46,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define INCLUDED_AI_FBX_DOCUMENT_H
 
 #include <numeric>
-#include <unordered_set>
 #include <stdint.h>
 #include <assimp/mesh.h>
 #include "FBXProperties.h"
@@ -55,13 +54,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _AI_CONCAT(a,b)  a ## b
 #define  AI_CONCAT(a,b)  _AI_CONCAT(a,b)
 
-
 namespace Assimp {
 namespace FBX {
-
-// Use an 'illegal' default FOV value to detect if the FBX camera has set the FOV.
-static const float kFovUnknown = -1.0f;
-
 
 class Parser;
 class Object;
@@ -86,10 +80,6 @@ class BlendShape;
 class Skin;
 class Cluster;
 
-#define new_LazyObject new (allocator.Allocate(sizeof(LazyObject))) LazyObject
-#define new_Connection new (allocator.Allocate(sizeof(Connection))) Connection
-#define delete_LazyObject(_p) (_p)->~LazyObject()
-#define delete_Connection(_p) (_p)->~Connection()
 
 /** Represents a delay-parsed FBX objects. Many objects in the scene
  *  are not needed by assimp, so it makes no sense to parse them
@@ -178,7 +168,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
 private:
@@ -252,7 +242,7 @@ public:
     fbx_simple_property(FilmAspectRatio, float, 1.0f)
     fbx_simple_property(ApertureMode, int, 0)
 
-    fbx_simple_property(FieldOfView, float, kFovUnknown)
+    fbx_simple_property(FieldOfView, float, 1.0f)
     fbx_simple_property(FocalLength, float, 1.0f)
 };
 
@@ -442,7 +432,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     /** Get material links */
@@ -513,7 +503,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     // return a 4-tuple
@@ -628,7 +618,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     const uint8_t* Content() const {
@@ -642,7 +632,7 @@ public:
 
     uint8_t* RelinquishContent() {
         uint8_t* ptr = content;
-        content = nullptr;
+        content = 0;
         return ptr;
     }
 
@@ -673,7 +663,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     const TextureMap& Textures() const {
@@ -745,7 +735,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
 
@@ -790,7 +780,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     /* the optional white list specifies a list of property names for which the caller
@@ -818,7 +808,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     const AnimationLayerList& Layers() const {
@@ -839,7 +829,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
 private:
@@ -865,14 +855,14 @@ public:
         return fullWeights;
     }
 
-    const std::unordered_set<const ShapeGeometry*>& GetShapeGeometries() const {
+    const std::vector<const ShapeGeometry*>& GetShapeGeometries() const {
         return shapeGeometries;
     }
 
 private:
     float percent;
     WeightArray fullWeights;
-    std::unordered_set<const ShapeGeometry*> shapeGeometries;
+    std::vector<const ShapeGeometry*> shapeGeometries;
 };
 
 /** DOM class for BlendShape deformers */
@@ -882,12 +872,12 @@ public:
 
     virtual ~BlendShape();
 
-    const std::unordered_set<const BlendShapeChannel*>& BlendShapeChannels() const {
+    const std::vector<const BlendShapeChannel*>& BlendShapeChannels() const {
         return blendShapeChannels;
     }
 
 private:
-    std::unordered_set<const BlendShapeChannel*> blendShapeChannels;
+    std::vector<const BlendShapeChannel*> blendShapeChannels;
 };
 
 /** DOM class for skin deformer clusters (aka sub-deformers) */
@@ -1028,7 +1018,7 @@ public:
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
-        return *props;
+        return *props.get();
     }
 
     const Document& GetDocument() const {
@@ -1082,7 +1072,7 @@ private:
 /** DOM root for a FBX file */
 class Document {
 public:
-    Document(Parser& parser, const ImportSettings& settings);
+    Document(const Parser& parser, const ImportSettings& settings);
 
     ~Document();
 
@@ -1107,7 +1097,7 @@ public:
 
     const FileGlobalSettings& GlobalSettings() const {
         ai_assert(globals.get());
-        return *globals;
+        return *globals.get();
     }
 
     const PropertyTemplateMap& Templates() const {
@@ -1166,7 +1156,7 @@ private:
     const ImportSettings& settings;
 
     ObjectMap objects;
-    Parser& parser;
+    const Parser& parser;
 
     PropertyTemplateMap templates;
     ConnectionMap src_connections;

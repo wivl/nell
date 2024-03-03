@@ -125,6 +125,7 @@ public:
                 type(World),
                 name(),
                 children(),
+                texture(),
                 texRepeat(1.f, 1.f),
                 texOffset(0.0f, 0.0f),
                 rotation(),
@@ -150,8 +151,7 @@ public:
         std::vector<Object> children;
 
         // texture to be assigned to all surfaces of the object
-        // the .acc format supports up to 4 textures
-        std::vector<std::string> textures;
+        std::string texture;
 
         // texture repat factors (scaling for all coordinates)
         aiVector2D texRepeat, texOffset;

@@ -45,8 +45,8 @@ INCLUDE_DIRECTORIES(
 
 if(NOT ASSIMP_HUNTER_ENABLED)
   INCLUDE_DIRECTORIES(
-    ${Assimp_SOURCE_DIR}/contrib/googletest/googletest/include
-    ${Assimp_SOURCE_DIR}/contrib/googletest/googletest/
+    ${Assimp_SOURCE_DIR}/contrib/gtest/include
+    ${Assimp_SOURCE_DIR}/contrib/gtest/
     ${Assimp_SOURCE_DIR}/contrib/pugixml/src
   )
 endif()
@@ -100,10 +100,6 @@ SET( COMMON
   unit/Common/utBase64.cpp
   unit/Common/utHash.cpp
   unit/Common/utBaseProcess.cpp
-)
-
-SET(Geometry 
-    unit/Geometry/utGeometryUtils.cpp
 )
 
 SET( IMPORTERS
@@ -204,13 +200,12 @@ SET( POST_PROCESSES
   unit/utGenBoundingBoxesProcess.cpp
 )
 
-SOURCE_GROUP( UnitTests\\Compiler      FILES unit/CCompilerTest.c )
-SOURCE_GROUP( UnitTests\\Common        FILES ${COMMON} )
-SOURCE_GROUP( UnitTests\\GeometryTools FILES ${Geometry} )
-SOURCE_GROUP( UnitTests\\ImportExport  FILES ${IMPORTERS} )
-SOURCE_GROUP( UnitTests\\Material      FILES ${MATERIAL} )
-SOURCE_GROUP( UnitTests\\Math          FILES ${MATH} )
-SOURCE_GROUP( UnitTests\\PostProcess   FILES ${POST_PROCESSES})
+SOURCE_GROUP( UnitTests\\Compiler     FILES  unit/CCompilerTest.c )
+SOURCE_GROUP( UnitTests\\Common       FILES  ${COMMON} )
+SOURCE_GROUP( UnitTests\\ImportExport FILES  ${IMPORTERS} )
+SOURCE_GROUP( UnitTests\\Material     FILES  ${MATERIAL} )
+SOURCE_GROUP( UnitTests\\Math         FILES  ${MATH} )
+SOURCE_GROUP( UnitTests\\PostProcess  FILES  ${POST_PROCESSES})
 
 add_executable( unit
     unit/CCompilerTest.c
@@ -218,7 +213,6 @@ add_executable( unit
     ../code/Common/Version.cpp
 	../code/Common/Base64.cpp
 	${COMMON}
-  ${Geometry}
 	${IMPORTERS}
 	${MATERIAL}
 	${MATH}
@@ -230,7 +224,7 @@ if(ASSIMP_HUNTER_ENABLED)
     find_package(GTest CONFIG REQUIRED)
     target_link_libraries(unit GTest::gtest_main GTest::gmock)
 else()
-    target_sources(unit PUBLIC ${Assimp_SOURCE_DIR}/contrib/googletest/googletest/src/gtest-all.cc)
+    target_sources(unit PUBLIC ${Assimp_SOURCE_DIR}/contrib/gtest/src/gtest-all.cc)
 endif()
 
 # RapidJSON
@@ -267,14 +261,6 @@ ENDIF()
 
 IF(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-ENDIF()
-
-IF (ASSIMP_WARNINGS_AS_ERRORS)
-  IF (MSVC)
-    TARGET_COMPILE_OPTIONS(unit PRIVATE /W4 /WX)
-  ELSE()
-    TARGET_COMPILE_OPTIONS(unit PRIVATE -Wall -Werror)
-  ENDIF()
 ENDIF()
 
 target_link_libraries( unit assimp ${platform_libs} )

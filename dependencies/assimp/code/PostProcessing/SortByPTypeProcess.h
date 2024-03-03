@@ -60,19 +60,17 @@ namespace Assimp    {
 */
 class ASSIMP_API SortByPTypeProcess : public BaseProcess {
 public:
-    // -------------------------------------------------------------------
-    /// The default class constructor / destructor.
     SortByPTypeProcess();
-    ~SortByPTypeProcess() override = default;
+    ~SortByPTypeProcess();
 
     // -------------------------------------------------------------------
-    bool IsActive( unsigned int pFlags) const override;
+    bool IsActive( unsigned int pFlags) const;
 
     // -------------------------------------------------------------------
-    void Execute( aiScene* pScene) override;
+    void Execute( aiScene* pScene);
 
     // -------------------------------------------------------------------
-    void SetupProperties(const Importer* pImp) override;
+    void SetupProperties(const Importer* pImp);
 
 private:
     int mConfigRemoveMeshes;

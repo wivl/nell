@@ -58,7 +58,7 @@ namespace Assimp {
 class RAWImporter : public BaseImporter {
 public:
     RAWImporter();
-    ~RAWImporter() override;
+    ~RAWImporter();
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.

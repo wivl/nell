@@ -87,8 +87,8 @@ public:
         int cylindricalTessellation;
     };
 
-    IFCImporter() = default;
-    ~IFCImporter() override = default;
+    IFCImporter();
+    ~IFCImporter() override;
 
     // --------------------
     bool CanRead(const std::string &pFile,

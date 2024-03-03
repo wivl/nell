@@ -69,7 +69,9 @@ public:
         // empty
     }
 
-    virtual ~Resource() = default;
+    virtual ~Resource() {
+        // empty
+    }
 
     virtual ResourceType getType() const {
         return ResourceType::RT_Unknown;
@@ -93,7 +95,7 @@ public:
         // empty
     }
 
-    ~EmbeddedTexture() override = default;
+    ~EmbeddedTexture() = default;
 
     ResourceType getType() const override {
         return ResourceType::RT_EmbeddedTexture2D;
@@ -110,7 +112,7 @@ public:
         // empty
     }
 
-    ~Texture2DGroup() override = default;
+    ~Texture2DGroup() = default;
 
     ResourceType getType() const override {
         return ResourceType::RT_Texture2DGroup;
@@ -127,7 +129,7 @@ public:
         // empty
     }
 
-    ~BaseMaterials() override = default;
+    ~BaseMaterials() = default;
 
     ResourceType getType() const override {
         return ResourceType::RT_BaseMaterials;
@@ -152,7 +154,7 @@ public:
         // empty
     }
 
-    ~Object() override = default;
+    ~Object() = default;
 
     ResourceType getType() const override {
         return ResourceType::RT_Object;

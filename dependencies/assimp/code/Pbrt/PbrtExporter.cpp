@@ -111,22 +111,7 @@ PbrtExporter::PbrtExporter(
         mScene(pScene),
         mIOSystem(pIOSystem),
         mPath(path),
-        mFile(file),
-        mRootTransform(
-            // rotates the (already left-handed) CRS -90 degrees around the x axis in order to
-            // make +Z 'up' and +Y 'towards viewer', as in default in pbrt
-            1.f,  0.f,  0.f, 0.f, //
-            0.f,  0.f, -1.f, 0.f, //
-            0.f,  1.f,  0.f, 0.f, //
-            0.f,  0.f,  0.f, 1.f  //
-        ) {
-
-    mRootTransform = aiMatrix4x4(
-        -1.f,  0,  0.f, 0.f, //
-        0.0f,  -1.f,  0.f, 0.f, //
-        0.f,  0.f,  1.f, 0.f, //
-        0.f,  0.f,  0.f, 1.f  //
-    ) * mRootTransform;
+        mFile(file) {
     // Export embedded textures.
     if (mScene->mNumTextures > 0)
         if (!mIOSystem->CreateDirectory("textures"))
@@ -275,7 +260,7 @@ aiMatrix4x4 PbrtExporter::GetNodeTransform(const aiString &name) const {
             node = node->mParent;
         }
     }
-    return mRootTransform * m;
+    return m;
 }
 
 std::string PbrtExporter::TransformAsString(const aiMatrix4x4 &m) {
@@ -324,7 +309,7 @@ void PbrtExporter::WriteCamera(int i) {
 
     // Get camera fov
     float hfov = AI_RAD_TO_DEG(camera->mHorizontalFOV);
-    float fov = (aspect >= 1.0) ? hfov : (hfov / aspect);
+    float fov = (aspect >= 1.0) ? hfov : (hfov * aspect);
     if (fov < 5) {
         std::cerr << fov << ": suspiciously low field of view specified by camera. Setting to 45 degrees.\n";
         fov = 45;
@@ -342,7 +327,7 @@ void PbrtExporter::WriteCamera(int i) {
 
     if (!cameraActive)
         mOutput << "# ";
-    mOutput << "Scale 1 1 1\n";
+    mOutput << "Scale -1 1 1\n";  // right handed -> left handed
     if (!cameraActive)
         mOutput << "# ";
     mOutput << "LookAt "
@@ -398,8 +383,8 @@ void PbrtExporter::WriteWorldDefinition() {
     }
 
     mOutput << "# Geometry\n\n";
-
-    WriteGeometricObjects(mScene->mRootNode, mRootTransform, meshUses);
+    aiMatrix4x4 worldFromObject;
+    WriteGeometricObjects(mScene->mRootNode, worldFromObject, meshUses);
 }
 
 void PbrtExporter::WriteTextures() {

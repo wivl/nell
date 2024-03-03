@@ -45,9 +45,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/StringUtils.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Base64.hpp>
-#include <rapidjson/document.h>
-#include <rapidjson/schema.h>
-#include <rapidjson/stringbuffer.h>
 
 // clang-format off
 #ifdef ASSIMP_ENABLE_DRACO
@@ -139,18 +136,6 @@ inline CustomExtension ReadExtensions(const char *name, Value &obj) {
         ret.mBoolValue.value = obj.GetBool();
         ret.mBoolValue.isPresent = true;
     }
-    return ret;
-}
-
-inline Extras ReadExtras(Value &obj) {
-    Extras ret;
-
-    ret.mValues.reserve(obj.MemberCount());
-    for (auto it = obj.MemberBegin(); it != obj.MemberEnd(); ++it) {
-        auto &val = it->value;
-        ret.mValues.emplace_back(ReadExtensions(it->name.GetString(), val));
-    }
-
     return ret;
 }
 
@@ -263,7 +248,7 @@ inline void Object::ReadExtensions(Value &val) {
 
 inline void Object::ReadExtras(Value &val) {
     if (Value *curExtras = FindObject(val, "extras")) {
-        this->extras = glTF2::ReadExtras(*curExtras);
+        this->extras = glTF2::ReadExtensions("extras", *curExtras);
     }
 }
 
@@ -386,7 +371,7 @@ template <class T>
 inline LazyDict<T>::LazyDict(Asset &asset, const char *dictId, const char *extId) :
         mDictId(dictId),
         mExtId(extId),
-        mDict(nullptr),
+        mDict(0),
         mAsset(asset) {
     asset.mDicts.push_back(this); // register to the list of dictionaries
 }
@@ -918,7 +903,7 @@ inline void Accessor::Read(Value &obj, Asset &r) {
 
         const unsigned int elementSize = GetElementSize();
         const size_t dataSize = count * elementSize;
-        sparse->PopulateData(dataSize, bufferView ? bufferView->GetPointer(byteOffset) : nullptr);
+        sparse->PopulateData(dataSize, bufferView ? bufferView->GetPointer(byteOffset) : 0);
         sparse->PatchData(elementSize);
     }
 }
@@ -977,15 +962,14 @@ inline size_t Accessor::GetMaxByteSize() {
 }
 
 template <class T>
-size_t Accessor::ExtractData(T *&outData, const std::vector<unsigned int> *remappingIndices) {
+void Accessor::ExtractData(T *&outData) {
     uint8_t *data = GetPointer();
     if (!data) {
         throw DeadlyImportError("GLTF2: data is null when extracting data from ", getContextForErrorMessages(id, name));
     }
 
-    const size_t usedCount = (remappingIndices != nullptr) ? remappingIndices->size() : count;
     const size_t elemSize = GetElementSize();
-    const size_t totalSize = elemSize * usedCount;
+    const size_t totalSize = elemSize * count;
 
     const size_t stride = GetStride();
 
@@ -996,31 +980,18 @@ size_t Accessor::ExtractData(T *&outData, const std::vector<unsigned int> *remap
     }
 
     const size_t maxSize = GetMaxByteSize();
+    if (count * stride > maxSize) {
+        throw DeadlyImportError("GLTF: count*stride ", (count * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
+    }
 
-    outData = new T[usedCount];
-
-    if (remappingIndices != nullptr) {
-        const unsigned int maxIndex = static_cast<unsigned int>(maxSize / stride - 1);
-        for (size_t i = 0; i < usedCount; ++i) {
-            size_t srcIdx = (*remappingIndices)[i];
-            if (srcIdx > maxIndex) {
-                throw DeadlyImportError("GLTF: index*stride ", (srcIdx * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
-            }
-            memcpy(outData + i, data + srcIdx * stride, elemSize);
-        }
-    } else { // non-indexed cases
-        if (usedCount * stride > maxSize) {
-            throw DeadlyImportError("GLTF: count*stride ", (usedCount * stride), " > maxSize ", maxSize, " in ", getContextForErrorMessages(id, name));
-        }
-        if (stride == elemSize && targetElemSize == elemSize) {
-            memcpy(outData, data, totalSize);
-        } else {
-            for (size_t i = 0; i < usedCount; ++i) {
-                memcpy(outData + i, data + i * stride, elemSize);
-            }
+    outData = new T[count];
+    if (stride == elemSize && targetElemSize == elemSize) {
+        memcpy(outData, data, totalSize);
+    } else {
+        for (size_t i = 0; i < count; ++i) {
+            memcpy(outData + i, data + i * stride, elemSize);
         }
     }
-    return usedCount;
 }
 
 inline void Accessor::WriteData(size_t _count, const void *src_buffer, size_t src_stride) {
@@ -1278,19 +1249,6 @@ inline void Material::Read(Value &material, Asset &r) {
                 this->pbrSpecularGlossiness = Nullable<PbrSpecularGlossiness>(pbrSG);
             }
         }
-        
-        if (r.extensionsUsed.KHR_materials_specular) {
-            if (Value *curMatSpecular = FindObject(*extensions, "KHR_materials_specular")) {
-                MaterialSpecular specular;
-
-                ReadMember(*curMatSpecular, "specularFactor", specular.specularFactor);
-                ReadTextureProperty(r, *curMatSpecular, "specularTexture", specular.specularTexture);
-                ReadMember(*curMatSpecular, "specularColorFactor", specular.specularColorFactor);
-                ReadTextureProperty(r, *curMatSpecular, "specularColorTexture", specular.specularColorTexture);
-
-                this->materialSpecular = Nullable<MaterialSpecular>(specular);
-            }
-        }
 
         // Extension KHR_texture_transform is handled in ReadTextureProperty
 
@@ -1355,16 +1313,6 @@ inline void Material::Read(Value &material, Asset &r) {
             }
         }
 
-        if (r.extensionsUsed.KHR_materials_emissive_strength) {
-            if (Value *curMaterialEmissiveStrength = FindObject(*extensions, "KHR_materials_emissive_strength")) {
-                MaterialEmissiveStrength emissiveStrength;
-
-                ReadMember(*curMaterialEmissiveStrength, "emissiveStrength", emissiveStrength.emissiveStrength);
-
-                this->materialEmissiveStrength = Nullable<MaterialEmissiveStrength>(emissiveStrength);
-            }
-        }
-
         unlit = nullptr != FindObject(*extensions, "KHR_materials_unlit");
     }
 }
@@ -1389,12 +1337,6 @@ inline void PbrSpecularGlossiness::SetDefaults() {
     glossinessFactor = 1.0f;
 }
 
-inline void MaterialSpecular::SetDefaults() {
-    //KHR_materials_specular properties
-    SetVector(specularColorFactor, defaultSpecularColorFactor);
-    specularFactor = 0.f;
-}
-
 inline void MaterialSheen::SetDefaults() {
     //KHR_materials_sheen properties
     SetVector(sheenColorFactor, defaultSheenFactor);
@@ -1411,11 +1353,6 @@ inline void MaterialVolume::SetDefaults() {
 inline void MaterialIOR::SetDefaults() {
     //KHR_materials_ior properties
     ior = 1.5f;
-}
-
-inline void MaterialEmissiveStrength::SetDefaults() {
-    //KHR_materials_emissive_strength properties
-    emissiveStrength = 0.f;
 }
 
 inline void Mesh::Read(Value &pJSON_Object, Asset &pAsset_Root) {
@@ -1951,7 +1888,7 @@ inline void Asset::Load(const std::string &pFile, bool isBinary)
     std::vector<char> sceneData;
     rapidjson::Document doc = ReadDocument(*stream, isBinary, sceneData);
 
-    // If a schemaDocumentProvider is available, see if the glTF schema is present.
+    // If a schemaDocumentProvider is available, see if the glTF schema is present. 
     // If so, use it to validate the document.
     if (mSchemaDocumentProvider) {
         if (const rapidjson::SchemaDocument *gltfSchema = mSchemaDocumentProvider->GetRemoteDocument("glTF.schema.json", 16)) {
@@ -2081,7 +2018,6 @@ inline void Asset::ReadExtensionsUsed(Document &doc) {
     }
 
     CHECK_EXT(KHR_materials_pbrSpecularGlossiness);
-    CHECK_EXT(KHR_materials_specular);
     CHECK_EXT(KHR_materials_unlit);
     CHECK_EXT(KHR_lights_punctual);
     CHECK_EXT(KHR_texture_transform);
@@ -2090,7 +2026,6 @@ inline void Asset::ReadExtensionsUsed(Document &doc) {
     CHECK_EXT(KHR_materials_transmission);
     CHECK_EXT(KHR_materials_volume);
     CHECK_EXT(KHR_materials_ior);
-    CHECK_EXT(KHR_materials_emissive_strength);
     CHECK_EXT(KHR_draco_mesh_compression);
     CHECK_EXT(KHR_texture_basisu);
 

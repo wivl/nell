@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2023, assimp team
+Copyright (c) 2006-2020, assimp team
 
 All rights reserved.
 
@@ -84,6 +84,7 @@ ObjFileImporter::ObjFileImporter() :
 //  Destructor.
 ObjFileImporter::~ObjFileImporter() {
     delete m_pRootObject;
+    m_pRootObject = nullptr;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ void ObjFileImporter::InternReadFile(const std::string &file, aiScene *pScene, I
         pIOHandler->Close(pStream);
     };
     std::unique_ptr<IOStream, decltype(streamCloser)> fileStream(pIOHandler->Open(file, mode), streamCloser);
-    if (!fileStream) {
+    if (!fileStream.get()) {
         throw DeadlyImportError("Failed to open file ", file, ".");
     }
 
@@ -269,7 +270,7 @@ aiNode *ObjFileImporter::createNodes(const ObjFile::Model *pModel, const ObjFile
     for (size_t i = 0; i < pObject->m_Meshes.size(); ++i) {
         unsigned int meshId = pObject->m_Meshes[i];
         aiMesh *pMesh = createTopology(pModel, pObject, meshId);
-        if (pMesh != nullptr) {
+        if (pMesh) {
             if (pMesh->mNumFaces > 0) {
                 MeshArray.push_back(pMesh);
             } else {
@@ -330,6 +331,7 @@ aiMesh *ObjFileImporter::createTopology(const ObjFile::Model *pModel, const ObjF
 
     for (size_t index = 0; index < pObjMesh->m_Faces.size(); index++) {
         const ObjFile::Face *inp = pObjMesh->m_Faces[index];
+        //ai_assert(nullptr != inp);
 
         if (inp->mPrimitiveType == aiPrimitiveType_LINE) {
             pMesh->mNumFaces += static_cast<unsigned int>(inp->m_vertices.size() - 1);
@@ -498,10 +500,6 @@ void ObjFileImporter::createVertexArray(const ObjFile::Model *pModel,
 
                 if (vertexIndex) {
                     if (!last) {
-                        if (pMesh->mNumVertices <= newIndex + 1) {
-                            throw DeadlyImportError("OBJ: bad vertex index");
-                        }
-
                         pMesh->mVertices[newIndex + 1] = pMesh->mVertices[newIndex];
                         if (!sourceFace->m_normals.empty() && !pModel->mNormals.empty()) {
                             pMesh->mNormals[newIndex + 1] = pMesh->mNormals[newIndex];

@@ -143,14 +143,6 @@ private:
      */
     static bool get_num_blend_controllers(const int num_blend_animations, int &num_blend_controllers);
 
-    /**
-     *  \brief Build a bone's node children hierarchy.
-     *
-     * \param[in] bone The bone for which we must build all children hierarchy.
-     */
-    struct TempBone;
-    void build_bone_children_hierarchy(const TempBone& bone);
-
     /** Output scene to be filled */
     aiScene *scene_;
 
@@ -206,13 +198,11 @@ private:
         TempBone() :
             node(nullptr),
             absolute_transform(),
-            offset_matrix(),
-            children() {}
+            offset_matrix() {}
 
         aiNode *node;
         aiMatrix4x4 absolute_transform;
         aiMatrix4x4 offset_matrix;
-        std::vector<int> children; // Bone children
     };
 
     std::vector<TempBone> temp_bones_;
@@ -232,7 +222,7 @@ void HL1MDLLoader::load_file_into_buffer(const std::string &file_path, unsigned 
 
     std::unique_ptr<IOStream> file(io_->Open(file_path));
 
-    if (file == nullptr) {
+    if (file.get() == nullptr) {
         throw DeadlyImportError("Failed to open MDL file ", DefaultIOSystem::fileName(file_path), ".");
     }
 

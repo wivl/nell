@@ -88,7 +88,6 @@ namespace {
 
 
     // ------------------------------------------------------------------------------------------------
-    AI_WONT_RETURN void ParseError(const std::string& message, TokenPtr token) AI_WONT_RETURN_SUFFIX;
     void ParseError(const std::string& message, TokenPtr token)
     {
         if(token) {
@@ -116,11 +115,8 @@ namespace Assimp {
 namespace FBX {
 
 // ------------------------------------------------------------------------------------------------
-Element::Element(const Token& key_token, Parser& parser) :
-    key_token(key_token), compound(nullptr)
-{
+Element::Element(const Token& key_token, Parser& parser) : key_token(key_token) {
     TokenPtr n = nullptr;
-    StackAllocator &allocator = parser.GetAllocator();
     do {
         n = parser.AdvanceToNextToken();
         if(!n) {
@@ -149,7 +145,7 @@ Element::Element(const Token& key_token, Parser& parser) :
         }
 
         if (n->Type() == TokenType_OPEN_BRACKET) {
-            compound = new_Scope(parser);
+            compound.reset(new Scope(parser));
 
             // current token should be a TOK_CLOSE_BRACKET
             n = parser.CurrentToken();
@@ -167,15 +163,6 @@ Element::Element(const Token& key_token, Parser& parser) :
 }
 
 // ------------------------------------------------------------------------------------------------
-Element::~Element()
-{
-    if (compound) {
-        delete_Scope(compound);
-    }
-
-     // no need to delete tokens, they are owned by the parser
-}
-
 Scope::Scope(Parser& parser,bool topLevel)
 {
     if(!topLevel) {
@@ -185,7 +172,6 @@ Scope::Scope(Parser& parser,bool topLevel)
         }
     }
 
-    StackAllocator &allocator = parser.GetAllocator();
     TokenPtr n = parser.AdvanceToNextToken();
     if (n == nullptr) {
         ParseError("unexpected end of file");
@@ -201,46 +187,37 @@ Scope::Scope(Parser& parser,bool topLevel)
         if (str.empty()) {
             ParseError("unexpected content: empty string.");
         }
-
-        auto *element = new_Element(*n, parser);
+        
+        elements.insert(ElementMap::value_type(str,new_Element(*n,parser)));
 
         // Element() should stop at the next Key token (or right after a Close token)
         n = parser.CurrentToken();
         if (n == nullptr) {
             if (topLevel) {
-                elements.insert(ElementMap::value_type(str, element));
                 return;
             }
-            delete_Element(element);
             ParseError("unexpected end of file",parser.LastToken());
-        } else {
-            elements.insert(ElementMap::value_type(str, element));
         }
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-Scope::~Scope()
-{
-	// This collection does not own the memory for the elements, but we need to call their d'tor:
-
-    for (ElementMap::value_type &v : elements) {
-        delete_Element(v.second);
+Scope::~Scope() {
+    for(ElementMap::value_type& v : elements) {
+        delete v.second;
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-Parser::Parser(const TokenList &tokens, StackAllocator &allocator, bool is_binary) :
-        tokens(tokens), allocator(allocator), last(), current(), cursor(tokens.begin()), is_binary(is_binary)
+Parser::Parser (const TokenList& tokens, bool is_binary)
+: tokens(tokens)
+, last()
+, current()
+, cursor(tokens.begin())
+, is_binary(is_binary)
 {
     ASSIMP_LOG_DEBUG("Parsing FBX tokens");
-    root = new_Scope(*this, true);
-}
-
-// ------------------------------------------------------------------------------------------------
-Parser::~Parser()
-{
-    delete_Scope(root);
+    root.reset(new Scope(*this,true));
 }
 
 // ------------------------------------------------------------------------------------------------

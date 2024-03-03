@@ -77,8 +77,9 @@ namespace nell {
 
         // TODO: generate opengl texture from mesh class
         GLMeshTexture(TextureManager &tm, const Model &model) {
-            this->indices_index = tm.generate_texture();
-            this->vertices_index = tm.generate_texture();
+            // TODO: 使用固定的slot值2, 3
+            this->vertices_index = 2;
+            this->indices_index = 3;
 
             std::cout << "[Nell][Debug]" << "GLMeshTexture::constructor" << ": "
                       << "vertices index: " << vertices_index << " "

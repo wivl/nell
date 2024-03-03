@@ -214,22 +214,22 @@ void nell::GLMeshTexture::model_to_texture(const nell::Model &model, nell::Shade
     for (int i = 0; i < model.meshes.size(); i++) {
         for (int j = 0; j < model.meshes[i].vertices.size(); j++) {
 
-            vertex_array[v_index * (8) + 0] = model.meshes[i].vertices[j].position.x;
-            vertex_array[v_index * (8) + 1] = model.meshes[i].vertices[j].position.y;
-            vertex_array[v_index * (8) + 2] = model.meshes[i].vertices[j].position.z;
+            vertex_array[v_index * (8) + 0] = (float)model.meshes[i].vertices[j].position.x;
+            vertex_array[v_index * (8) + 1] = (float)model.meshes[i].vertices[j].position.y;
+            vertex_array[v_index * (8) + 2] = (float)model.meshes[i].vertices[j].position.z;
 
-            vertex_array[v_index * (8) + 3] = model.meshes[i].vertices[j].normal.x;
-            vertex_array[v_index * (8) + 4] = model.meshes[i].vertices[j].normal.y;
-            vertex_array[v_index * (8) + 5] = model.meshes[i].vertices[j].normal.z;
+            vertex_array[v_index * (8) + 3] = (float)model.meshes[i].vertices[j].normal.x;
+            vertex_array[v_index * (8) + 4] = (float)model.meshes[i].vertices[j].normal.y;
+            vertex_array[v_index * (8) + 5] = (float)model.meshes[i].vertices[j].normal.z;
 
-            vertex_array[v_index * (8) + 6] = model.meshes[i].vertices[j].texcoord.x;
-            vertex_array[v_index * (8) + 7] = model.meshes[i].vertices[j].texcoord.y;
+            vertex_array[v_index * (8) + 6] = (float)model.meshes[i].vertices[j].texcoord.x;
+            vertex_array[v_index * (8) + 7] = (float)model.meshes[i].vertices[j].texcoord.y;
 
             v_index++;
         }
 
         for (int j = 0; j < model.meshes[i].indices.size(); j++) {
-            face_array[f_index] = model.meshes[i].indices[j];
+            face_array[f_index] = (float)model.meshes[i].indices[j];
             f_index++;
         }
 
@@ -247,8 +247,10 @@ void nell::GLMeshTexture::model_to_texture(const nell::Model &model, nell::Shade
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glUniform1i(glGetUniformLocation(shader.id, "vertices"), vertices_index);
-        glUniform1i(glGetUniformLocation(shader.id, "vertices_num"), vertices_size);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+//        glUniform1i(glGetUniformLocation(shader.id, "vertices"), 2);
+//        glUniform1i(glGetUniformLocation(shader.id, "vertices_num"), vertices_size);
 
         glGenTextures(1, &indices_id);
         glBindTexture(GL_TEXTURE_2D, indices_id);
@@ -259,8 +261,10 @@ void nell::GLMeshTexture::model_to_texture(const nell::Model &model, nell::Shade
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glUniform1i(glGetUniformLocation(shader.id, "indices"), indices_index);
-        glUniform1i(glGetUniformLocation(shader.id, "indices_num"), indices_size);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+//        glUniform1i(glGetUniformLocation(shader.id, "indices"), 3);
+//        glUniform1i(glGetUniformLocation(shader.id, "indices_num"), indices_size);
 
         delete[] vertex_array;
         delete[] face_array;
@@ -271,8 +275,14 @@ void nell::GLMeshTexture::model_to_texture(const nell::Model &model, nell::Shade
 
 void nell::GLMeshTexture::setup(const nell::Model &model, nell::Shader &shader) {
     model_to_texture(model, shader);
-    glActiveTexture(GL_TEXTURE0 + this->vertices_index);
+    glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, this->vertices_id);
-    glActiveTexture(GL_TEXTURE0 + this->indices_index);
+    glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, this->indices_id);
+
+    glUniform1i(glGetUniformLocation(shader.id, "vertices"), 2);
+    glUniform1i(glGetUniformLocation(shader.id, "vertices_num"), vertices_size);
+
+    glUniform1i(glGetUniformLocation(shader.id, "indices"), 3);
+    glUniform1i(glGetUniformLocation(shader.id, "indices_num"), indices_size);
 }

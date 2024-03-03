@@ -533,7 +533,8 @@ bool World_hit(World world, Ray ray, float t_min, float t_max, inout HitRecord h
 vec3 get_environemnt_color(Ray ray){
     vec3 normalizeDir = normalize(ray.direction);
     float t = (normalizeDir.y + 1.0) * 0.5;
-    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+//    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.0, 0.0, 0.0);
 }
 
 vec3 ray_trace(Ray ray, int depth) {

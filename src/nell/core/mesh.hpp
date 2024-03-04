@@ -77,7 +77,7 @@ namespace nell {
         int vertices_size;
 
         // TODO: generate opengl texture from mesh class
-        GLMeshTexture(TextureManager &tm, const Model &model) {
+        GLMeshTexture(const Model &model) {
             // TODO: 使用固定的slot值2, 3
             this->vertices_index = 2;
             this->indices_index = 3;

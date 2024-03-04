@@ -100,9 +100,88 @@ int main() {
     camera.update_and_sync(pathtracing_shader.id);
 
     nell::Model model("./dragon_vrip.ply");
-    auto tm = nell::TextureManager();
-    auto model_texture = nell::GLMeshTexture(tm, model);
-    model_texture.setup(model, pathtracing_shader);
+
+    // model to texture
+
+    int data_size_f = 0, data_size_v = 0;
+
+    std::cout << "[Nell][Debug]" << "Converting Model to texture: "
+            << "mesh count: " << model.meshes.size() << std::endl;
+
+    for (int i = 0; i < model.meshes.size(); i++) {
+        data_size_v += (int)model.meshes[i].vertices.size();
+        data_size_f += (int)model.meshes[i].indices.size();
+    }
+
+    std::cout << "[Nell][Debug]" << "Model face count: " << data_size_f / 3 << " "
+            << "vertices count: " << data_size_v << std::endl;
+
+    float vert_x_f = sqrtf(data_size_v);
+    int vert_x = ceilf(vert_x_f);
+    int vert_y = ceilf((float)data_size_v / (float)vert_x);
+    float face_x_f = sqrtf(data_size_f);
+    int face_x = ceilf(face_x_f);
+    int face_y = ceilf((float)data_size_f / (float)face_x);
+
+    float *vertex_array = new float[(3+3+2) * (vert_x * vert_y)];
+    float *face_array = new float[(1) * (face_x * face_y)];
+
+    assert(vertex_array != nullptr);
+    assert(face_array != nullptr);
+
+    int v_index = 0;
+    int f_index = 0;
+
+    for (int i = 0; i < model.meshes.size(); i++) {
+        for (int j = 0; j < model.meshes[i].vertices.size(); j++) {
+            vertex_array[v_index * (8) + 0] = 0.04*(float)model.meshes[i].vertices[j].position.x;
+            vertex_array[v_index * (8) + 1] = 0.04*(float)model.meshes[i].vertices[j].position.y;
+            vertex_array[v_index * (8) + 2] = 0.04*(float)model.meshes[i].vertices[j].position.z;
+
+            vertex_array[v_index * (8) + 3] = (float)model.meshes[i].vertices[j].position.x;
+            vertex_array[v_index * (8) + 4] = (float)model.meshes[i].vertices[j].position.y;
+            vertex_array[v_index * (8) + 5] = (float)model.meshes[i].vertices[j].position.z;
+
+            vertex_array[v_index * (8) + 6] = (float)model.meshes[i].vertices[j].position.x;
+            vertex_array[v_index * (8) + 7] = (float)model.meshes[i].vertices[j].position.y;
+
+            v_index++;
+        }
+
+        for (int j = 0; j < model.meshes[i].indices.size(); j++) {
+            face_array[f_index] = (float)model.meshes[i].indices[j];
+            f_index++;
+        }
+
+    }
+
+    unsigned int indices_texture, vertices_texture;
+
+    glGenTextures(1, &vertices_texture);
+    glBindTexture(GL_TEXTURE_2D, vertices_texture);
+    glTexImage2D(GL_TEXTURE, 0, GL_R32F, vert_x * 8, vert_y, 0, GL_RED, GL_FLOAT, vertex_array);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenTextures(1, &indices_texture);
+    glBindTexture(GL_TEXTURE_2D, indices_texture);
+    glTexImage2D(GL_TEXTURE, 0, GL_R32F, face_x, face_y, 0, GL_RED, GL_FLOAT, face_array);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    delete[] vertex_array;
+    delete[] face_array;
+
 
     // setup framebuffer for progressive rendering
 
@@ -149,12 +228,21 @@ int main() {
     glBindTexture(GL_TEXTURE_2D, pt_texture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, acc_texture);
+    // mesh
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, vertices_texture);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, indices_texture);
 
     glUniform1i(glGetUniformLocation(acc_shader.id, "currentFrame"), 0);
     glUniform1i(glGetUniformLocation(acc_shader.id, "accFrame"), 1);
     glUniform1i(glGetUniformLocation(preview_shader.id, "frame"), 1);
+    // mesh
+    glUniform1i(glGetUniformLocation(pathtracing_shader.id, "vertices"), 2);
+    glUniform1i(glGetUniformLocation(pathtracing_shader.id, "indices"), 3);
+    glUniform1i(glGetUniformLocation(pathtracing_shader.id, "vertices_num"), data_size_v);
+    glUniform1i(glGetUniformLocation(pathtracing_shader.id, "indices_num"), data_size_f);
 
-    // setup mesh
 
 
     nell::CPURandomInit();
@@ -174,6 +262,14 @@ int main() {
 
         pathtracing_shader.use();
         camera.sync(pathtracing_shader.id);
+
+        // mesh
+
+        glUniform1i(glGetUniformLocation(pathtracing_shader.id, "vertices"), 2);
+        glUniform1i(glGetUniformLocation(pathtracing_shader.id, "indices"), 3);
+        glUniform1i(glGetUniformLocation(pathtracing_shader.id, "vertices_num"), data_size_v);
+        glUniform1i(glGetUniformLocation(pathtracing_shader.id, "indices_num"), data_size_f);
+
 
         glUniform1f(glGetUniformLocation(pathtracing_shader.id, "time"), time);
         glUniform1f(glGetUniformLocation(pathtracing_shader.id, "rand_origin"),

@@ -9,11 +9,15 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS 
-        main.cpp
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+        src/*.cpp
+        src/utils/*.cpp
 )
 
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS *.hpp)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
+        src/*.hpp
+        src/utils/*.hpp
+)
 
 
 

@@ -4,104 +4,105 @@
 
 #include <glm/gtc/constants.hpp>
 
-nell::Camera::Camera(vec3 lookfrom,
-                     vec3 lookat,
-                     vec3 vup,
+nell::Camera::Camera(vec3 position,
+                     vec3 direction,
                      float vfov,
                      float aspect,
-                     float aperture,
-                     float focus_dist) { // length from origin to thing you look at
+                     float focusLength) { // length from position to thing you look at
 
-    this->origin = lookfrom;
-    this->lookat = lookat;
-    this->vup = vup;
+    this->position = position;
+    this->direction = normalize(direction);
     this->vfov = vfov;
     this->aspect = aspect;
-    this->aperture = aperture;
-    this->focus_dist = focus_dist;
+    this->focusDist = focusLength;
 
-    this->loop = 0.0f;
+    this->loop = 0;
 
-    // calculate
-    this->lens_radius = aperture / 2;
-
-    float theta = radians(vfov);
-    float half_height = tan(theta/2);
-    float half_width = aspect * half_height;
-
-    this->w = normalize(lookfrom - lookat); // in camera space, camera looks at -z(w) direction
-    // w, v, vup is in the same plane
-    this->u = normalize(cross(vup, w));     // so u can be calculated as the normal vector of the plane
-    this->v = cross(w, u); // up
-
-    this->lower_left_corner = origin
-                              - half_width * focus_dist * u
-                              - half_height * focus_dist * v
-                              - focus_dist * w;
-
-    this->horizontal = 2 * half_width*focus_dist * u;
-    this->vertical = 2 * half_height*focus_dist * v;
+    update();
 }
 
 
 void nell::Camera::update() {
     // calculate
-    this->lens_radius = aperture / 2;
 
     float theta = radians(vfov);
-    float half_height = tan(theta/2);
-    float half_width = aspect * half_height;
+    float halfHeight = tan(theta / 2);
+    float halfWidth = aspect * halfHeight;
 
-    this->w = normalize(origin - lookat); // in camera space, camera looks at -z(w) direction
+    this->w = normalize(-direction); // in camera space, camera looks at -z(w) direction
     // w, v, vup is in the same plane
-    this->u = normalize(cross(vup, w));     // so u can be calculated as the normal vector of the plane
-    this->v = cross(w, u); // up
+    this->u = normalize(cross(vec3(0, 1, 0), w));     // so u can be calculated as the normal vector of the plane
+    this->v = normalize(cross(w, u)); // up
 
-    this->lower_left_corner = origin
-                              - half_width * focus_dist * u
-                              - half_height * focus_dist * v
-                              - focus_dist * w;
+    this->lowerLeftCorner = position
+                            - halfWidth * focusDist * u
+                            - halfHeight * focusDist * v
+                            - focusDist * w;
 
-    this->horizontal = 2 * half_width*focus_dist * u;
-    this->vertical = 2 * half_height*focus_dist * v;
+    this->horizontal = 2 * halfWidth * focusDist * u;
+    this->vertical = 2 * halfHeight * focusDist * v;
 }
 
-void nell::Camera::sync(unsigned int shader_id) {
-    glUniform3f(glGetUniformLocation(shader_id, "camera.lower_left_corner"),
-                this->lower_left_corner.x,
-                this->lower_left_corner.y,
-                this->lower_left_corner.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.horizontal"),
+void nell::Camera::sync(unsigned int shaderId) {
+    glUniform3f(glGetUniformLocation(shaderId, "camera.lowerLeftCorner"),
+                this->lowerLeftCorner.x,
+                this->lowerLeftCorner.y,
+                this->lowerLeftCorner.z);
+    glUniform3f(glGetUniformLocation(shaderId, "camera.horizontal"),
                 this->horizontal.x,
                 this->horizontal.y,
                 this->horizontal.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.vertical"),
+    glUniform3f(glGetUniformLocation(shaderId, "camera.vertical"),
                 this->vertical.x,
                 this->vertical.y,
                 this->vertical.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.origin"),
-                this->origin.x,
-                this->origin.y,
-                this->origin.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.u"),
+    glUniform3f(glGetUniformLocation(shaderId, "camera.position"),
+                this->position.x,
+                this->position.y,
+                this->position.z);
+    glUniform3f(glGetUniformLocation(shaderId, "camera.u"),
                 this->u.x,
                 this->u.y,
                 this->u.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.v"),
+    glUniform3f(glGetUniformLocation(shaderId, "camera.v"),
                 this->v.x,
                 this->v.y,
                 this->v.z);
-    glUniform3f(glGetUniformLocation(shader_id, "camera.w"),
+    glUniform3f(glGetUniformLocation(shaderId, "camera.w"),
                 this->w.x,
                 this->w.y,
                 this->w.z);
-    glUniform1f(glGetUniformLocation(shader_id, "camera.horizontal"),
-                this->lens_radius);
+//    glUniform1f(glGetUniformLocation(shaderId, "camera.horizontal"),
+//                this->lensRadius);
     this->loop = 0;
 
 }
 
-void nell::Camera::update_and_sync(unsigned int shader_id) {
+void nell::Camera::updateAndSync(unsigned int shaderId) {
     update();
-    sync(shader_id);
-}`
+    sync(shaderId);
+}
+
+void nell::Camera::moveForward(float speed) {
+    this->position -= this->w * speed;
+}
+
+void nell::Camera::moveBackward(float speed) {
+    this->position -= this->w * speed;
+}
+
+void nell::Camera::moveLeft(float speed) {
+    this->position -= this->u * speed;
+}
+
+void nell::Camera::moveRight(float speed) {
+    this->position += this->u * speed;
+}
+
+void nell::Camera::moveUp(float speed) {
+    this->position += vec3(0, 1, 0) * speed;
+}
+
+void nell::Camera::moveDown(float speed) {
+    this->position -= vec3(0, 1, 0) * speed;
+}

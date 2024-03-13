@@ -10,6 +10,8 @@ uniform float time;
 uniform int width;
 uniform int height;
 
+#define PI 3.1415926535
+
 uint wseed;
 // returns a [0, 1) value
 float randcore(inout uint seed) {

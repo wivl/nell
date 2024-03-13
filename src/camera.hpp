@@ -5,41 +5,38 @@
 using namespace glm;
 
 namespace nell {
+    // TODO: 重写 camera，定义 direction 取代 lookat
     class Camera {
     public:
-        vec3 lower_left_corner;
-        vec3 horizontal;
-        vec3 vertical;
-        vec3 origin;
-        vec3 u, v, w;
-        float lens_radius;
-
-
-        vec3 lookat;
-        vec3 vup;
+        vec3 position;
+        vec3 direction;
         float vfov;
         float aspect;
-        float aperture;
-        float focus_dist;
+        float focusDist;
 
-        void update();
-        void sync(unsigned int shader_id);
-        void update_and_sync(unsigned int shader_id);
-
-        float loop;
+        int loop;
+    private:
+        vec3 lowerLeftCorner;
+        vec3 horizontal;
+        vec3 vertical;
+        vec3 u, v, w; // back, right, up(not vertically up)
 
     public:
-        Camera(vec3 lookfrom,
-               vec3 lookat,
-               vec3 vup,
+        Camera(vec3 position,
+               vec3 direction,
                float vfov,
                float aspect,
-               float aperture,
-               float focus_dist);
+               float focusLength);
 
-        // TODO: complete setters
-        void position(vec3 p) { origin = p; }
-        vec3 position() const { return origin; }
-        void set_lens_radius(float lr) { lens_radius = lr; }
+        void update();
+        void sync(unsigned int shaderId);
+        void updateAndSync(unsigned int shaderId);
+
+        void moveForward(float speed);
+        void moveBackward(float speed);
+        void moveLeft(float speed);
+        void moveRight(float speed);
+        void moveUp(float speed);
+        void moveDown(float speed);
     };
 }

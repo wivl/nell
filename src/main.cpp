@@ -2,19 +2,27 @@
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 
+#include<glm/gtx/rotate_vector.hpp>
+#include<glm/gtx/vector_angle.hpp>
+
 #include "shader.hpp"
 #include "utils/random.hpp"
 #include "camera.hpp"
 
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-void process_input(GLFWwindow *window, nell::Camera &camera);
+void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderid);
 
 
 #define WIDTH 1920
 #define HEIGHT 1080
 
 #define SPEED 0.1 // speed of camera move
+
+float firstClick = true;
+
+float sensitivity = 0.49;
+
 
 
 
@@ -36,7 +44,7 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -87,15 +95,12 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 lookfrom = vec3(13, 2, 3);
-    vec3 lookat = vec3(0, 0, 0);
-    vec3 vup = vec3(0, 1, 0);
-    float dist_to_focus = length(lookat - lookfrom);
-    float aperture = 10.0;
+    vec3 position = vec3(0, 0, 1);
+    vec3 direction = vec3(0, 0, -1);
+    float focusLength = 1.0;
 
-    nell::Camera camera(lookfrom, lookat, vup, 20, aspect_ratio, aperture,
-                        dist_to_focus);
-    camera.update_and_sync(ptShader.id);
+    nell::Camera camera(position, direction, 20, aspect_ratio, focusLength);
+    camera.updateAndSync(ptShader.id);
 
 
 
@@ -106,7 +111,7 @@ int main() {
     nell::CPURandomInit();
 
     while (!glfwWindowShouldClose(window)) {
-        process_input(window, camera);
+        processInput(window, camera, ptShader.id);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -132,20 +137,84 @@ int main() {
     }
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void process_input(GLFWwindow *window, nell::Camera &camera) {
+void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderid) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
     // TODO: Camera update
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.origin += (camera.w  * static_cast<float>(SPEED));
+        camera.moveForward(static_cast<float>(SPEED));
+        camera.update();
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.origin -= (camera.w  * static_cast<float>(SPEED));
+        camera.moveBackward(static_cast<float>(SPEED));
+        camera.update();
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera.moveLeft(static_cast<float>(SPEED));
+        camera.update();
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera.moveRight(static_cast<float>(SPEED));
+        camera.update();
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        camera.moveUp(static_cast<float>(SPEED));
+        camera.update();
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        camera.moveDown(static_cast<float>(SPEED));
+        camera.update();
     }
 
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        // Hides mouse cursor
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+        // Prevents camera from jumping on the first click
+        if (firstClick)
+        {
+            glfwSetCursorPos(window, (WIDTH / 2), (HEIGHT / 2));
+            firstClick = false;
+        }
+
+        // Stores the coordinates of the cursor
+        double mouseX;
+        double mouseY;
+        // Fetches the coordinates of the cursor
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+
+        // Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
+        // and then "transforms" them into degrees
+        float rotX = sensitivity * (float)(mouseY - (HEIGHT / 2)) / HEIGHT;
+        float rotY = sensitivity * (float)(mouseX - (WIDTH / 2)) / WIDTH;
+
+        // Calculates upcoming vertical change in the Orientation
+        glm::vec3 newOrientation = glm::rotate(camera.direction, glm::radians(-rotX), glm::normalize(glm::cross(camera.direction, vec3(0, 1, 0))));
+
+        // Decides whether or not the next vertical Orientation is legal or not
+        if (abs(glm::angle(newOrientation, vec3(0, 1, 0)) - glm::radians(90.0f)) <= glm::radians(85.0f))
+        {
+            camera.direction = newOrientation;
+        }
+
+        // Rotates the Orientation left and right
+        camera.direction = glm::rotate(camera.direction, glm::radians(-rotY), vec3(0, 1, 0));
+
+        // Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
+        glfwSetCursorPos(window, (WIDTH / 2), (HEIGHT / 2));
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+    {
+        // Unhides cursor since camera is not looking around anymore
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        // Makes sure the next time the camera looks around it doesn't jump
+        firstClick = true;
+    }
+    camera.updateAndSync(shaderid);
 }

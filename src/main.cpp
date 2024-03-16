@@ -2,6 +2,8 @@
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include<glm/gtx/rotate_vector.hpp>
 #include<glm/gtx/vector_angle.hpp>
 
@@ -17,11 +19,16 @@ void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderi
 #define WIDTH 1920
 #define HEIGHT 1080
 
-#define SPEED 0.1 // speed of camera move
+
+const float Material_Lambertian = 0.0;
+const float Material_Metal = 1.0;
+const float Material_Dielectric = 2.0;
+
+#define SPEED 0.05 // speed of camera move
 
 float firstClick = true;
 
-float sensitivity = 0.49;
+float sensitivity = 5.0;
 
 
 
@@ -102,6 +109,13 @@ int main() {
     nell::Camera camera(position, direction, 20, aspect_ratio, focusLength);
     camera.updateAndSync(ptShader.id);
 
+#define materialArraySize 14
+
+    const float materials[materialArraySize] {
+        Material_Lambertian, 0.8, 0.8, 0.0,
+        Material_Metal, 0.1, 0.2, 0.5, 0.0,
+        Material_Dielectric, 1.0, 1.0, 1.0, 1.5
+    };
 
 
 
@@ -124,6 +138,9 @@ int main() {
         glUniform1i(glGetUniformLocation(ptShader.id, "height"), HEIGHT);
         glUniform1f(glGetUniformLocation(ptShader.id, "randOrigin"), randOrigin);
         glUniform1f(glGetUniformLocation(ptShader.id, "time"), time);
+
+        glUniform1i(glGetUniformLocation(ptShader.id, "materialArraySize"), materialArraySize);
+        glUniform1fv(glGetUniformLocation(ptShader.id, "materials"), materialArraySize, materials);
 
         ptShader.use();
 

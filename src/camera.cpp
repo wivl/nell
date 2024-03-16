@@ -1,8 +1,6 @@
 #include "camera.hpp"
-#include <glm/ext/quaternion_geometric.hpp>
 #include <glad/glad.h>
 
-#include <glm/gtc/constants.hpp>
 
 nell::Camera::Camera(vec3 position,
                      vec3 direction,
@@ -72,9 +70,10 @@ void nell::Camera::sync(unsigned int shaderId) {
                 this->w.x,
                 this->w.y,
                 this->w.z);
-//    glUniform1f(glGetUniformLocation(shaderId, "camera.horizontal"),
-//                this->lensRadius);
+
     this->loop = 0;
+    glUniform1i(glGetUniformLocation(shaderId, "camera.loop"),
+                this->loop);
 
 }
 
@@ -88,7 +87,7 @@ void nell::Camera::moveForward(float speed) {
 }
 
 void nell::Camera::moveBackward(float speed) {
-    this->position -= this->w * speed;
+    this->position += this->w * speed;
 }
 
 void nell::Camera::moveLeft(float speed) {

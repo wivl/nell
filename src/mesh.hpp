@@ -33,7 +33,7 @@ namespace nell {
         glm::vec3 normals[MAX_VERTEX_NUM];
         glm::vec2 uvs[MAX_VERTEX_NUM];
 
-        glm::vec3 faces[MAX_FACE_NUM];
+        glm::ivec3 faces[MAX_FACE_NUM];
     };
 
     class Mesh {
@@ -57,7 +57,7 @@ namespace nell {
         std::string directory;
 
         // load model from file, and
-        void load(std::string path);
+        void load(const std::string& path);
 
         // transform a aiScene to std::vector<Mesh> in Model class
         void processNode(aiNode *node, const aiScene *scene);
@@ -68,7 +68,7 @@ namespace nell {
         std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string type_name);
 
     public:
-        Model(char *path) {
+        explicit Model(const char *path) {
             load(path);
         }
 

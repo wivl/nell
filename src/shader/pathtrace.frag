@@ -1,4 +1,4 @@
-#version 410 core
+#version 460 core
 
 
 in vec2 TexCoords;
@@ -9,6 +9,17 @@ uniform float time;
 
 uniform int width;
 uniform int height;
+
+#define MAX_VERTEX_NUM 40000
+#define MAX_FACE_NUM 40000
+
+layout(std430, binding = 0) buffer VertexBuffer {
+    vec3 vertices[MAX_VERTEX_NUM];
+    vec3 normals[MAX_VERTEX_NUM];
+    vec2 uvs[MAX_VERTEX_NUM];
+
+    ivec3 faces[MAX_FACE_NUM];
+};
 
 #define PI 3.1415926535
 

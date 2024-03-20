@@ -10,6 +10,7 @@
 #include "shader.hpp"
 #include "utils/random.hpp"
 #include "camera.hpp"
+#include "mesh.hpp"
 
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
@@ -116,6 +117,12 @@ int main() {
         Material_Metal, 0.1, 0.2, 0.5, 0.0,
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
+
+    nell::Model model = nell::Model("./spot.obj");
+    int fnum = 0;
+    int vnum = 0;
+
+    nell::MeshData* mesh = model.generateMeshData(vnum, fnum);
 
 
 

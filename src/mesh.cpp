@@ -1,6 +1,8 @@
 #include "mesh.hpp"
 #include <glad/glad.h>
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <stb_image_write.h>
 #include <iostream>
 
 
@@ -12,7 +14,7 @@ nell::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<int> indices, std::ve
     // setup();
 }
 
-void nell::Model::load(std::string path) {
+void nell::Model::load(const std::string& path) {
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
@@ -178,17 +180,22 @@ nell::MeshData *nell::Model::generateMeshData(int &vnum, int &fnum) {
     }
 
     auto *data = new MeshData;
+    int findex = 0;
+    int vindex = 0;
 
     for (int i = 0; i < this->meshes.size(); i++) {
         for (int j = 0; j < this->meshes[i].vertices.size(); j++) {
-            // TODO:
+            data->vertices[vindex] = this->meshes[i].vertices[j].position;
+            data->normals[vindex] = this->meshes[i].vertices[j].normal;
+            data->uvs[vindex] = this->meshes[i].vertices[j].texcoord;
+            vindex++;
+        }
+
+        for (int j = 0; j < this->meshes[i].indices.size(); j+=3) {
+            data->faces[findex] = glm::ivec3(this->meshes[i].indices[j], this->meshes[i].indices[j+1], this->meshes[i].indices[j+2]);
+            findex++;
         }
     }
 
-
-
     return data;
-
-
-    return nullptr;
 }

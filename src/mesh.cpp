@@ -16,7 +16,7 @@ nell::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<int> indices, std::ve
 
 void nell::Model::load(const std::string& path) {
     Assimp::Importer import;
-    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
@@ -41,6 +41,7 @@ nell::Mesh nell::Model::processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<Vertex> vertices;
     std::vector<int> indices;
     std::vector<Texture> textures;
+
 
     // load vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
@@ -157,12 +158,15 @@ std::vector<nell::Texture> nell::Model::loadMaterialTextures(aiMaterial *mat, ai
 nell::MeshData *nell::Model::generateMeshData(int &vnum, int &fnum) {
     std::cout << "[Nell][Debug]" << "Model::generateMeshData" << ": "
               << "mesh count: " << this->meshes.size() << std::endl;
+
     vnum = 0;
     fnum = 0;
     for (int i = 0; i < this->meshes.size(); i++) {
         vnum += this->meshes[i].vertices.size();
         fnum += this->meshes[i].indices.size();
     }
+
+    fnum /= 3;
 
     std::cout << "[Nell][Debug]" << "Model::generateMeshData" << ": "
               << "vertex count: " << vnum << " "

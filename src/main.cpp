@@ -118,7 +118,7 @@ int main() {
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
 
-    nell::Model model = nell::Model("./spot.obj");
+    nell::Model model = nell::Model("./teapot.obj");
     int fnum = 0;
     int vnum = 0;
 

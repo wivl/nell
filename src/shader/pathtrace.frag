@@ -13,6 +13,10 @@ uniform int height;
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
 
+//#define DEBUG_TRIANGLE_ONLY
+
+uniform int faceCount;
+
 layout(std430, binding = 0) buffer VertexBuffer {
     vec3 vertices[MAX_VERTEX_NUM];
     vec3 normals[MAX_VERTEX_NUM];
@@ -172,6 +176,73 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
     return false;
 }
 
+struct Triangle {
+    vec3 position[3];
+    vec3 normal[3];
+    vec2 uv[3];
+};
+
+Triangle Triangle_get(ivec3 face) {
+    Triangle triangle;
+    triangle.position[0] = vertices[face.x];
+    triangle.position[1] = vertices[face.y];
+    triangle.position[2] = vertices[face.z];
+
+    triangle.normal[0] = normals[face.x];
+    triangle.normal[1] = normals[face.y];
+    triangle.normal[2] = normals[face.z];
+
+    triangle.uv[0] = uvs[face.x];
+    triangle.uv[1] = uvs[face.y];
+    triangle.uv[2] = uvs[face.z];
+
+    return triangle;
+}
+
+bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout HitRecord hitRecord) {
+    vec3 e1 = triangle.position[1] - triangle.position[0];
+    vec3 e2 = triangle.position[2] - triangle.position[0];
+    vec3 s = ray.origin - triangle.position[0];
+    vec3 s1 = cross(ray.direction, e2);
+    vec3 s2 = cross(s, e1);
+
+    vec3 temp = vec3(
+        dot(s2, e2),
+        dot(s1, s),
+        dot(s2, ray.direction)
+    );
+
+    vec3 hitResult = (1.0/(s1*e1)) *  temp;
+    float t = hitResult.x;
+    float b1 = hitResult.y;
+    float b2 = hitResult.z;
+    float b0 = 1.0 - b1 - b2;
+
+    // test if hit result is available
+    if (t < 0) {
+        return false;
+    }
+    if (b1 < 0 || b2 < 0) {
+        return false;
+    }
+
+    hitRecord.t = t;
+    hitRecord.position = b0 * triangle.position[0] +
+    b1 * triangle.position[1] +
+    b2 * triangle.position[2];
+
+    hitRecord.normal = b0 * triangle.normal[0] +
+    b1 * triangle.normal[1] +
+    b2 * triangle.normal[2];
+
+    // TODO: material
+    hitRecord.materialPtr = 0;
+    hitRecord.materialType = materials[0];
+    return true;
+}
+
+
+
 void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
                         out Ray scattered, out vec3 attenuation) {
     vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
@@ -282,6 +353,24 @@ Scene Scene_demo_1() {
     return scene;
 }
 
+#ifdef DEBUG_TRIANGLE_ONLY
+bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
+    HitRecord tempRecord;
+    bool hitAnything = false;
+    float t_close = t_max;
+
+    for (int i = 0; i < faceCount; i++) {
+        Triangle triangle = Triangle_get(faces[i]);
+        if (Triangle_hit(ray, triangle, t_min, t_close, tempRecord)) {
+            hitRecord = tempRecord;
+            hitAnything = true;
+            t_close = hitRecord.t;
+        }
+    }
+
+    return hitAnything;
+}
+#else
 bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
     HitRecord tempRecord;
     bool hitAnything = false;
@@ -297,6 +386,9 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
 
     return hitAnything;
 }
+#endif
+
+
 
 vec3 trace(Ray ray, int depth) {
     Scene scene = Scene_demo_1();

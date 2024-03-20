@@ -17,8 +17,8 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderid);
 
 
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 1600
+#define HEIGHT 800
 
 
 const float Material_Lambertian = 0.0;
@@ -103,7 +103,7 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 0, 1);
+    vec3 position = vec3(0, 0, 4);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
@@ -124,6 +124,14 @@ int main() {
 
     nell::MeshData* mesh = model.generateMeshData(vnum, fnum);
 
+    GLuint ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(nell::MeshData), mesh, GL_STATIC_DRAW);
+
+    GLuint bindingPoint = 0;
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
 
@@ -145,9 +153,11 @@ int main() {
         glUniform1i(glGetUniformLocation(ptShader.id, "height"), HEIGHT);
         glUniform1f(glGetUniformLocation(ptShader.id, "randOrigin"), randOrigin);
         glUniform1f(glGetUniformLocation(ptShader.id, "time"), time);
+        glUniform1i(glGetUniformLocation(ptShader.id, "faceCount"), fnum);
 
         glUniform1i(glGetUniformLocation(ptShader.id, "materialArraySize"), materialArraySize);
         glUniform1fv(glGetUniformLocation(ptShader.id, "materials"), materialArraySize, materials);
+
 
         ptShader.use();
 

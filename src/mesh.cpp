@@ -16,7 +16,11 @@ nell::Mesh::Mesh(std::vector<Vertex> vertices, std::vector<int> indices, std::ve
 
 void nell::Model::load(const std::string& path) {
     Assimp::Importer import;
-    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate
+    | aiProcess_FlipUVs
+    | aiProcess_JoinIdenticalVertices
+    | aiProcess_GenNormals
+    );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;

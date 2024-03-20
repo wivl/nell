@@ -13,7 +13,7 @@ uniform int height;
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
 
-//#define DEBUG_TRIANGLE_ONLY
+#define DEBUG_TRIANGLE_ONLY
 
 uniform int faceCount;
 
@@ -353,6 +353,7 @@ Scene Scene_demo_1() {
     return scene;
 }
 
+// TODO: ssbo 传值出现错误，考虑直接传float数组和int数组
 #ifdef DEBUG_TRIANGLE_ONLY
 bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
     HitRecord tempRecord;

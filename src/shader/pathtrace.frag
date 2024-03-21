@@ -175,6 +175,9 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
     return false;
 }
 
+
+
+
 struct Triangle {
     vec3 position[3];
     vec3 normal[3];
@@ -206,14 +209,16 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
         dot(s2, ray.direction)
     );
 
-    vec3 hitResult = (1.0/(s1*e1)) *  temp;
+    vec3 hitResult = (1.0/dot(s1, e1)) *  temp;
     float t = hitResult.x;
     float b1 = hitResult.y;
     float b2 = hitResult.z;
     float b0 = 1.0 - b1 - b2;
 
     // test if hit result is available
-    if (t < 0) {
+    if (t < t_min) {
+        return false;
+    } else if (t > t_max) {
         return false;
     }
     if (b1 < 0 || b2 < 0) {
@@ -347,7 +352,7 @@ Scene Scene_demo_1() {
     return scene;
 }
 
-// TODO: ssbo 传值出现错误，考虑直接传float数组和int数组
+
 #ifdef DEBUG_TRIANGLE_ONLY
 bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
     HitRecord tempRecord;
@@ -355,7 +360,7 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
     float t_close = t_max;
 
     for (int i = 0; i < faceCount; i++) {
-        Triangle triangle = Triangle_get(faces[i]);
+        Triangle triangle = Triangle_get(ivec3(faces[i].x, faces[i].y, faces[i].z));
         if (Triangle_hit(ray, triangle, t_min, t_close, tempRecord)) {
             hitRecord = tempRecord;
             hitAnything = true;

@@ -25,11 +25,11 @@ const float Material_Lambertian = 0.0;
 const float Material_Metal = 1.0;
 const float Material_Dielectric = 2.0;
 
-#define SPEED 0.05 // speed of camera move
+#define SPEED 0.5 // speed of camera moVE
 
 float firstClick = true;
 
-float sensitivity = 5.0;
+float sensitivity = 40.0;
 
 
 
@@ -103,11 +103,11 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 0, 4);
+    vec3 position = vec3(0, 0, 100);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
-    nell::Camera camera(position, direction, 20, aspect_ratio, focusLength);
+    nell::Camera camera(position, direction, 90, aspect_ratio, focusLength);
     camera.updateAndSync(ptShader.id);
 
 #define materialArraySize 14
@@ -118,7 +118,7 @@ int main() {
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
 
-    nell::Model model = nell::Model("./teapot.obj");
+    nell::Model model = nell::Model("./cube.obj");
     int fnum = 0;
     int vnum = 0;
 

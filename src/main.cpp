@@ -1,4 +1,10 @@
 #include <iostream>
+
+#include "../dependencies/imgui/imgui.h"
+#include "../dependencies/imgui/imgui_impl_glfw.h"
+#include "../dependencies/imgui/imgui_impl_opengl3.h"
+
+
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 
@@ -139,11 +145,24 @@ int main() {
 
     nell::CPURandomInit();
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO(); (void) io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
     while (!glfwWindowShouldClose(window)) {
-        processInput(window, camera, ptShader.id);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        if (!io.WantCaptureMouse) {
+            processInput(window, camera, ptShader.id);
+        }
 
         float randOrigin = 674764.0f * (nell::GetCPURandom() + 1.0f);
         auto time = static_cast<float>(glfwGetTime());
@@ -166,10 +185,32 @@ int main() {
 
 
 
+        ImGui::Begin("Camera: ");
+        ImGui::Text("%s", (std::string("Position: ") +
+            std::to_string(camera.position.x) + std::string(" ") +
+            std::to_string(camera.position.y) + std::string(" ") +
+            std::to_string(camera.position.z)
+                    ).c_str());
+        ImGui::Text("%s", (std::string("Direction: ") +
+                     std::to_string(camera.direction.x) + std::string(" ") +
+                     std::to_string(camera.direction.y) + std::string(" ") +
+                     std::to_string(camera.direction.z)
+                    ).c_str());
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
 }
+
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);

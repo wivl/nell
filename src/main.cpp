@@ -109,7 +109,7 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 0, 100);
+    vec3 position = vec3(0, 0, 0);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
@@ -124,7 +124,7 @@ int main() {
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
 
-    nell::Model model = nell::Model("./cube.obj");
+    nell::Model model = nell::Model("./teapot.obj");
     int fnum = 0;
     int vnum = 0;
 

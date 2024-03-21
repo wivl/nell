@@ -218,12 +218,14 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     // test if hit result is available
     if (t < t_min) {
         return false;
-    } else if (t > t_max) {
+    }
+    if (t > t_max) {
         return false;
     }
-    if (b1 < 0 || b2 < 0) {
+    if (b0 < 0 || b1 < 0 || b2 < 0) {
         return false;
     }
+
 
     hitRecord.t = t;
     hitRecord.position = b0 * triangle.position[0] +

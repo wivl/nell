@@ -29,11 +29,10 @@ namespace nell {
 #define MAX_FACE_NUM 40000
 
     struct MeshData {
-        glm::vec3 vertices[MAX_VERTEX_NUM];
-        glm::vec3 normals[MAX_VERTEX_NUM];
-        glm::vec2 uvs[MAX_VERTEX_NUM];
+        glm::vec4 vertices[MAX_VERTEX_NUM];
+        glm::vec4 normals[MAX_VERTEX_NUM];
 
-        glm::ivec3 faces[MAX_FACE_NUM];
+        glm::ivec4 faces[MAX_FACE_NUM];
     };
 
     class Mesh {

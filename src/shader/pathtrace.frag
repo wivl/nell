@@ -20,7 +20,6 @@ uniform int faceCount;
 layout(std430, binding = 0) buffer VertexBuffer {
     vec3 vertices[MAX_VERTEX_NUM];
     vec3 normals[MAX_VERTEX_NUM];
-    vec2 uvs[MAX_VERTEX_NUM];
 
     ivec3 faces[MAX_FACE_NUM];
 };
@@ -179,7 +178,6 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
 struct Triangle {
     vec3 position[3];
     vec3 normal[3];
-    vec2 uv[3];
 };
 
 Triangle Triangle_get(ivec3 face) {
@@ -191,10 +189,6 @@ Triangle Triangle_get(ivec3 face) {
     triangle.normal[0] = normals[face.x];
     triangle.normal[1] = normals[face.y];
     triangle.normal[2] = normals[face.z];
-
-    triangle.uv[0] = uvs[face.x];
-    triangle.uv[1] = uvs[face.y];
-    triangle.uv[2] = uvs[face.z];
 
     return triangle;
 }
@@ -442,7 +436,7 @@ void main() {
     int spp = 1;
     for (int i = 0; i < spp; i++) {
         Ray ray = Camera_getRay(camera, TexCoords + rand2() / screenSize);
-        color += trace(ray, 50);
+        color += trace(ray, 5);
     }
     color /= spp;
     color = gammaCorrection(color);

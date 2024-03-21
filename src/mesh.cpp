@@ -193,14 +193,13 @@ nell::MeshData *nell::Model::generateMeshData(int &vnum, int &fnum) {
 
     for (int i = 0; i < this->meshes.size(); i++) {
         for (int j = 0; j < this->meshes[i].vertices.size(); j++) {
-            data->vertices[vindex] = this->meshes[i].vertices[j].position;
-            data->normals[vindex] = this->meshes[i].vertices[j].normal;
-            data->uvs[vindex] = this->meshes[i].vertices[j].texcoord;
+            data->vertices[vindex] = glm::vec4(this->meshes[i].vertices[j].position, 0);
+            data->normals[vindex] = glm::vec4(this->meshes[i].vertices[j].normal, 0);
             vindex++;
         }
 
         for (int j = 0; j < this->meshes[i].indices.size(); j+=3) {
-            data->faces[findex] = glm::ivec3(this->meshes[i].indices[j], this->meshes[i].indices[j+1], this->meshes[i].indices[j+2]);
+            data->faces[findex] = glm::ivec4(this->meshes[i].indices[j], this->meshes[i].indices[j+1], this->meshes[i].indices[j+2], 0);
             findex++;
         }
     }

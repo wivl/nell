@@ -112,8 +112,8 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(-0.5, 0.36, -1.7);
-    vec3 direction = vec3(0.38, -0.1, 0.9);
+    vec3 position = vec3(0, 2, 6);
+    vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
     nell::Camera camera(position, direction, 90, aspect_ratio, focusLength);
@@ -127,7 +127,7 @@ int main() {
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
 
-    nell::Model model = nell::Model("./spot.obj");
+    nell::Model model = nell::Model("./chess_scene.obj");
     int fnum = 0;
     int vnum = 0;
 

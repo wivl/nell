@@ -20,6 +20,8 @@ void nell::Model::load(const std::string& path) {
     | aiProcess_FlipUVs
     | aiProcess_JoinIdenticalVertices
     | aiProcess_GenNormals
+    | aiProcess_OptimizeMeshes
+    | aiProcess_OptimizeGraph
     );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {

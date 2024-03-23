@@ -7,6 +7,8 @@
 
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
+#include <stb_image_write.h>
+#include <stb_image.h>
 
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -21,6 +23,7 @@
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderid);
+unsigned int LoadImage(char const* path);
 
 
 #define WIDTH 1600
@@ -31,7 +34,7 @@ const float Material_Lambertian = 0.0;
 const float Material_Metal = 1.0;
 const float Material_Dielectric = 2.0;
 
-#define SPEED 0.5 // speed of camera moVE
+#define SPEED 0.5 // speed of camera move
 
 float firstClick = true;
 
@@ -109,8 +112,8 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 0, 0);
-    vec3 direction = vec3(0, 0, -1);
+    vec3 position = vec3(-0.5, 0.36, -1.7);
+    vec3 direction = vec3(0.38, -0.1, 0.9);
     float focusLength = 1.0;
 
     nell::Camera camera(position, direction, 90, aspect_ratio, focusLength);
@@ -124,11 +127,15 @@ int main() {
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5
     };
 
-    nell::Model model = nell::Model("./teapot.obj");
+    nell::Model model = nell::Model("./spot.obj");
     int fnum = 0;
     int vnum = 0;
 
     nell::MeshData* mesh = model.generateMeshData(vnum, fnum);
+
+    unsigned int skybox = LoadImage("./vestibule_8k.hdr");
+
+
 
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
@@ -166,6 +173,11 @@ int main() {
 
         float randOrigin = 674764.0f * (nell::GetCPURandom() + 1.0f);
         auto time = static_cast<float>(glfwGetTime());
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, skybox);
+        glUniform1i(glGetUniformLocation(ptShader.id, "skybox"), 0);
+
 
 
         glUniform1i(glGetUniformLocation(ptShader.id, "width"), WIDTH);
@@ -293,3 +305,47 @@ void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderi
     }
     camera.updateAndSync(shaderid);
 }
+
+unsigned int LoadImage(char const* path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    stbi_set_flip_vertically_on_load(true);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data) {
+        GLenum format;
+        GLenum iformat;
+        if (nrComponents == 1) {
+            format = GL_RED;
+            iformat = GL_RED;
+        }
+        else if (nrComponents == 3) {
+            format = GL_RGB;
+            iformat = GL_RGB;
+        }
+        else {
+            format = GL_RGBA;
+            iformat = GL_RGBA;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, iformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else {
+        std::cout << "[Nell][Debug]Main::LoadImage: Unable to laod "<< path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+

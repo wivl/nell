@@ -10,6 +10,8 @@ uniform float time;
 uniform int width;
 uniform int height;
 
+uniform sampler2D skybox;
+
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
 
@@ -237,8 +239,8 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     b2 * triangle.normal[2];
 
     // TODO: material
-    hitRecord.materialPtr = 0;
-    hitRecord.materialType = materials[0];
+    hitRecord.materialPtr = 9;
+    hitRecord.materialType = materials[9];
     return true;
 }
 
@@ -323,9 +325,18 @@ void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRec
 }
 
 vec3 getEnvironmentColor(Ray ray) {
-    vec3 normalizeDir = normalize(ray.direction);
-    float t = (normalizeDir.y + 1.0) * 0.5;
-    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+//    vec3 normalizeDir = normalize(ray.direction);
+//    float t = (normalizeDir.y + 1.0) * 0.5;
+//    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+    vec3 direction = normalize(ray.direction);
+    float phi = atan(direction.z, direction.x);
+    float theta = acos(direction.y);
+
+    float u = (phi + PI) / (2.0 * PI);
+    float v = 1.0 - theta / PI;
+
+    return texture(skybox, vec2(u, v)).rgb;
 }
 
 struct Scene {
@@ -443,7 +454,7 @@ void main() {
     int spp = 1;
     for (int i = 0; i < spp; i++) {
         Ray ray = Camera_getRay(camera, TexCoords + rand2() / screenSize);
-        color += trace(ray, 5);
+        color += trace(ray, 50);
     }
     color /= spp;
     color = gammaCorrection(color);

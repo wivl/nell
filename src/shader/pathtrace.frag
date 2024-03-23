@@ -239,8 +239,8 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     b2 * triangle.normal[2];
 
     // TODO: material
-    hitRecord.materialPtr = 9;
-    hitRecord.materialType = materials[9];
+    hitRecord.materialPtr = 0;
+    hitRecord.materialType = materials[0];
     return true;
 }
 

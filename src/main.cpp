@@ -23,7 +23,8 @@
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderid);
-unsigned int LoadImage(char const* path);
+unsigned int loadImage(char const* path);
+void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum);
 
 
 #define WIDTH 1600
@@ -112,7 +113,7 @@ int main() {
     vec2 screen_size = vec2(WIDTH, HEIGHT);
 
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 2, 6);
+    vec3 position = vec3(0, 2, 15);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
@@ -133,7 +134,9 @@ int main() {
 
     nell::MeshData* mesh = model.generateMeshData(vnum, fnum);
 
-    unsigned int skybox = LoadImage("./vestibule_8k.hdr");
+    cornellBoxilize(mesh, vnum, fnum);
+
+    unsigned int skybox = loadImage("./vestibule_8k.hdr");
 
 
 
@@ -306,7 +309,7 @@ void processInput(GLFWwindow *window, nell::Camera &camera, unsigned int shaderi
     camera.updateAndSync(shaderid);
 }
 
-unsigned int LoadImage(char const* path) {
+unsigned int loadImage(char const* path) {
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
@@ -342,10 +345,112 @@ unsigned int LoadImage(char const* path) {
         stbi_image_free(data);
     }
     else {
-        std::cout << "[Nell][Debug]Main::LoadImage: Unable to laod "<< path << std::endl;
+        std::cout << "[Nell][Debug]Main::loadImage: Unable to laod "<< path << std::endl;
         stbi_image_free(data);
     }
 
     return textureID;
 }
 
+void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
+    glm::vec3 vert[20] = {
+            // 0
+            glm::vec3(-5, 10, 5),
+            glm::vec3(-5, 0, -5),
+            glm::vec3(-5, 10, -5),
+            // 1
+            glm::vec3(-5, 0, 5),
+            // 2
+            glm::vec3(-5, 10, 5),
+            glm::vec3(-5, 10, -5),
+            glm::vec3(5, 10, -5),
+            // 3
+            glm::vec3(5, 10, 5),
+            // 4
+            glm::vec3(5, 10, 5),
+            glm::vec3(5, 10, -5),
+            glm::vec3(5, 0, -5),
+            // 5
+            glm::vec3(5, 0, 5),
+            // 6
+            glm::vec3(5, 0, 5),
+            glm::vec3(5, 0, -5),
+            glm::vec3(-5, 0, -5),
+            // 7
+            glm::vec3(-5, 0, 5),
+            // 8
+            glm::vec3(-5, 0, -5),
+            glm::vec3(5, 0, -5),
+            glm::vec3(-5, 10, -5),
+            // 9
+            glm::vec3(5, 10, -5),
+    };
+
+    glm::ivec3 face[10] = {
+            glm::ivec3(vnum, vnum+1, vnum+2),
+            glm::ivec3(vnum, vnum+3, vnum+1),
+            glm::ivec3(vnum+4, vnum+5, vnum+6),
+            glm::ivec3(vnum+4, vnum+6, vnum+7),
+            glm::ivec3(vnum+8, vnum+9, vnum+10),
+            glm::ivec3(vnum+8, vnum+10, vnum+11),
+            glm::ivec3(vnum+12, vnum+13, vnum+14),
+            glm::ivec3(vnum+12, vnum+14, vnum+15),
+            glm::ivec3(vnum+16, vnum+17, vnum+18),
+            glm::ivec3(vnum+17, vnum+18, vnum+19),
+    };
+    glm::vec3 normal[20] = {
+            // 0
+            glm::vec3(1, 0, 0),
+            glm::vec3(1, 0, 0),
+            glm::vec3(1, 0, 0),
+            // 1
+            glm::vec3(1, 0, 0),
+            // 2
+            glm::vec3(0, -1, 0),
+            glm::vec3(0, -1, 0),
+            glm::vec3(0, -1, 0),
+            // 3
+            glm::vec3(0, -1, 0),
+            // 4
+            glm::vec3(-1, 0, 0),
+            glm::vec3(-1, 0, 0),
+            glm::vec3(-1, 0, 0),
+            // 5
+            glm::vec3(-1, 0, 0),
+            // 6
+            glm::vec3(0, 1, 0),
+            glm::vec3(0, 1, 0),
+            glm::vec3(0, 1, 0),
+            // 7
+            glm::vec3(0, 1, 0),
+            // 8
+            glm::vec3(0, 0, 1),
+            glm::vec3(0, 0, 1),
+            glm::vec3(0, 0, 1),
+            // 9
+            glm::vec3(0, 0, 1),
+    };
+
+    if (vnum + 20 >= MAX_VERTEX_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many vertices: " << vnum + 20 << std::endl;
+        return ;
+    }
+    if (fnum + 10 >= MAX_FACE_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many faces: " << fnum + 10 << std::endl;
+        return ;
+    }
+    for (int i = 0; i < 20; i++) {
+        mesh->vertices[vnum + i] = glm::vec4(vert[i], 0);
+    }
+    for (int i = 0; i < 20; i++) {
+        mesh->normals[vnum + i] = glm::vec4(normal[i], 0);
+    }
+    for (int i = 0; i < 10; i++) {
+        mesh->faces[fnum + i] = glm::ivec4(face[i], 0);
+    }
+    vnum += 20;
+    fnum += 10;
+    std::cout << "[Nell][Debug]" << "cornellBoxilize" << ": "
+              << "vertex count: " << vnum << " "
+              << "face count: " << fnum << std::endl;
+}

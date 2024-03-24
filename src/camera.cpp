@@ -105,3 +105,4 @@ void nell::Camera::moveUp(float speed) {
 void nell::Camera::moveDown(float speed) {
     this->position -= vec3(0, 1, 0) * speed;
 }
+

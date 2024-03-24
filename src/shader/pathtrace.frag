@@ -14,6 +14,7 @@ uniform sampler2D skybox;
 
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
+#define MAX_MATERIAL_NUM 50
 
 #define DEBUG_TRIANGLE_ONLY
 
@@ -24,6 +25,9 @@ layout(std430, binding = 0) buffer VertexBuffer {
     vec3 normals[MAX_VERTEX_NUM];
 
     ivec3 faces[MAX_FACE_NUM];
+
+    float materials[MAX_MATERIAL_NUM];
+    int materialPtrs[MAX_FACE_NUM];
 };
 
 #define PI 3.1415926535
@@ -109,8 +113,8 @@ const float Material_Lambertian = 0.0;
 const float Material_Metal = 1.0;
 const float Material_Dielectric = 2.0;
 
-uniform int materialArraySize;
-uniform float materials[20];
+//uniform int materialArraySize;
+//uniform float materials[20];
 
 struct HitRecord {
     float t; // time
@@ -183,9 +187,12 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
 struct Triangle {
     vec3 position[3];
     vec3 normal[3];
+    int materialPtr;
+    float materialType;
 };
 
-Triangle Triangle_get(ivec3 face) {
+Triangle Triangle_get(int faceptr) {
+    ivec3 face = faces[faceptr];
     Triangle triangle;
     triangle.position[0] = vertices[face.x];
     triangle.position[1] = vertices[face.y];
@@ -194,6 +201,9 @@ Triangle Triangle_get(ivec3 face) {
     triangle.normal[0] = normals[face.x];
     triangle.normal[1] = normals[face.y];
     triangle.normal[2] = normals[face.z];
+
+    triangle.materialPtr = materialPtrs[faceptr];
+    triangle.materialType = materials[triangle.materialPtr];
 
     return triangle;
 }
@@ -238,9 +248,8 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     b1 * triangle.normal[1] +
     b2 * triangle.normal[2];
 
-    // TODO: material
-    hitRecord.materialPtr = 0;
-    hitRecord.materialType = materials[0];
+    hitRecord.materialPtr = triangle.materialPtr;
+    hitRecord.materialType = triangle.materialType;
     return true;
 }
 
@@ -373,7 +382,7 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
     float t_close = t_max;
 
     for (int i = 0; i < faceCount; i++) {
-        Triangle triangle = Triangle_get(ivec3(faces[i].x, faces[i].y, faces[i].z));
+        Triangle triangle = Triangle_get(i);
         if (Triangle_hit(ray, triangle, t_min, t_close, tempRecord)) {
             hitRecord = tempRecord;
             hitAnything = true;
@@ -416,6 +425,7 @@ vec3 trace(Ray ray, int depth) {
             vec3 attenuation;
             Ray scatterRay;
 
+            // ray intersect
             if (hitRecord.materialType == Material_Lambertian) {
                 Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
                         scatterRay, attenuation);
@@ -428,6 +438,7 @@ vec3 trace(Ray ray, int depth) {
             }
 
             ray = scatterRay;
+            // shading
             objColor *= attenuation;
         } else {
             bgColor = getEnvironmentColor(ray);

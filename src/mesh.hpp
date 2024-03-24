@@ -27,12 +27,17 @@ namespace nell {
 
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
+#define MAX_MATERIAL_NUM 50
 
     struct MeshData {
         glm::vec4 vertices[MAX_VERTEX_NUM];
         glm::vec4 normals[MAX_VERTEX_NUM];
 
         glm::ivec4 faces[MAX_FACE_NUM];
+
+        // assigned in scene
+        float materials[MAX_MATERIAL_NUM];
+        int materialPtrs[MAX_FACE_NUM];
     };
 
     class Mesh {

@@ -4,7 +4,6 @@
 using namespace glm;
 
 namespace nell {
-    // TODO: 重写 camera，定义 direction 取代 lookat
     class Camera {
     public:
         vec3 position;
@@ -21,6 +20,7 @@ namespace nell {
         vec3 u, v, w; // back, right, up(not vertically up)
 
     public:
+        Camera();
         Camera(vec3 position,
                vec3 direction,
                float vfov,

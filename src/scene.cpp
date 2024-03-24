@@ -5,7 +5,7 @@
 
 
 void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
-    glm::vec3 vert[20] = {
+    glm::vec3 vert[24] = {
             // 0
             glm::vec3(-5, 10, 5),
             glm::vec3(-5, 0, -5),
@@ -36,9 +36,16 @@ void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
             glm::vec3(-5, 10, -5),
             // 9
             glm::vec3(5, 10, -5),
+            // 10, light
+            glm::vec3(-3, 9.8, 3),
+            glm::vec3(-3, 9.8, -3),
+            glm::vec3(3, 9.8, -3),
+            // 11, light
+            glm::vec3(3, 9.8, 3),
+
     };
 
-    glm::ivec3 face[10] = {
+    glm::ivec3 face[12] = {
             glm::ivec3(vnum, vnum+1, vnum+2),
             glm::ivec3(vnum, vnum+3, vnum+1),
             glm::ivec3(vnum+4, vnum+5, vnum+6),
@@ -49,8 +56,12 @@ void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
             glm::ivec3(vnum+12, vnum+14, vnum+15),
             glm::ivec3(vnum+16, vnum+17, vnum+18),
             glm::ivec3(vnum+17, vnum+18, vnum+19),
+            // light
+            glm::ivec3(vnum+20, vnum+21, vnum+22),
+            glm::ivec3(vnum+20, vnum+22, vnum+23),
+
     };
-    glm::vec3 normal[20] = {
+    glm::vec3 normal[24] = {
             // 0
             glm::vec3(1, 0, 0),
             glm::vec3(1, 0, 0),
@@ -81,27 +92,33 @@ void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
             glm::vec3(0, 0, 1),
             // 9
             glm::vec3(0, 0, 1),
+            // 10, light
+            glm::vec3(0, -1, 0),
+            glm::vec3(0, -1, 0),
+            glm::vec3(0, -1, 0),
+            // 11, light
+            glm::vec3(0, -1, 0),
     };
 
-    if (vnum + 20 >= MAX_VERTEX_NUM) {
-        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many vertices: " << vnum + 20 << std::endl;
+    if (vnum + 24 >= MAX_VERTEX_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many vertices: " << vnum + 24 << std::endl;
         return ;
     }
-    if (fnum + 10 >= MAX_FACE_NUM) {
-        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many faces: " << fnum + 10 << std::endl;
+    if (fnum + 12 >= MAX_FACE_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many faces: " << fnum + 12 << std::endl;
         return ;
     }
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 24; i++) {
         mesh->vertices[vnum + i] = glm::vec4(vert[i], 0);
     }
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 24; i++) {
         mesh->normals[vnum + i] = glm::vec4(normal[i], 0);
     }
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 12; i++) {
         mesh->faces[fnum + i] = glm::ivec4(face[i], 0);
     }
-    vnum += 20;
-    fnum += 10;
+    vnum += 24;
+    fnum += 12;
     std::cout << "[Nell][Debug]" << "cornellBoxilize" << ": "
               << "vertex count: " << vnum << " "
               << "face count: " << fnum << std::endl;
@@ -137,6 +154,7 @@ void nell::Scene::sync(unsigned int shaderid) {
         glUniform1i(glGetUniformLocation(shaderid, "skybox"), 0);
     }
 
+    glUniform1i(glGetUniformLocation(shaderid, "containSkybox"), containSkybox ? 1 : 0);
     glUniform1i(glGetUniformLocation(shaderid, "width"), width);
     glUniform1i(glGetUniformLocation(shaderid, "height"), height);
     glUniform1i(glGetUniformLocation(shaderid, "faceCount"), fnum);
@@ -150,7 +168,7 @@ const float materials[materialArraySize] {
         Material_Lambertian, 0.65, 0.05, 0.05, // red
         Material_Lambertian, 0.73, 0.73, 0.73, // white
         Material_Lambertian, 0.12, 0.45, 0.15, // green
-        Material_Emit, 15, 15, 15, // TODO:
+        Material_Emit, 4, 4, 4, // TODO:
 
 };
 
@@ -161,8 +179,8 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
     nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
     cornellBoxilize(mesh, vnum, fnum);
 
-    bool containSkybox = true;
-    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
+    bool containSkybox = false;
+//    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
     // material
     for (int i = 0; i < materialArraySize; i++) {
         mesh->materials[i] = materials[i];
@@ -192,21 +210,25 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
     for (int i = 1866; i < 1868; i++) {
         mesh->materialPtrs[i] = 22;
     }
-    // TODO: find bounds
-    for (int i = 1868; i < fnum; i++) {
+    // white bottom and back wall
+    for (int i = 1868; i < 1872; i++) {
         mesh->materialPtrs[i] = 18;
+    }
+    // light
+    for (int i = 1872; i < fnum; i++) {
+        mesh->materialPtrs[i] = 26;
     }
     int width = 800;
     int height = 800;
 
     vec2 screen_size = vec2(width, height);
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 5, 10);
+    vec3 position = vec3(0, 5, 10.5);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
     nell::Camera *camera = new nell::Camera(position, direction, 90, aspect_ratio, focusLength);
 
 
-    return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
+    return Scene(vnum, fnum, mesh, camera, containSkybox, -1, width, height);
 }

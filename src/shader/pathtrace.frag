@@ -10,6 +10,7 @@ uniform float time;
 uniform int width;
 uniform int height;
 
+uniform int containSkybox;
 uniform sampler2D skybox;
 
 #define MAX_VERTEX_NUM 40000
@@ -112,6 +113,7 @@ Ray Camera_getRay(Camera camera, vec2 uv){
 const float Material_Lambertian = 0.0;
 const float Material_Metal = 1.0;
 const float Material_Dielectric = 2.0;
+const float Material_Emit = 3.0;
 
 //uniform int materialArraySize;
 //uniform float materials[20];
@@ -255,7 +257,8 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
 
 
 
-void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
+// returns true if reflects
+bool Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
                         out Ray scattered, out vec3 attenuation) {
     vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
 
@@ -263,9 +266,10 @@ void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRec
 
     scattered.origin = hitRecord.position;
     scattered.direction = hitRecord.normal + randomInUnitSphere();
+    return true;
 }
 
-void Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
+bool Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
                     out Ray scattered, out vec3 attenuation) {
     vec3 specular = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
     float fuzz = materials[materialOffset+4];
@@ -275,6 +279,7 @@ void Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
     scattered.origin = hitRecord.position;
     scattered.direction = reflect(incident.direction, hitRecord.normal) + fuzz * randomInUnitSphere();
 
+    return true;
 }
 
 bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted){
@@ -296,7 +301,7 @@ float schlick(float cosine, float ior){
 }
 
 
-void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRecord,
+bool Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRecord,
                     out Ray scattered, out vec3 attenuation) {
     vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
     float refractIndex = materials[materialOffset+4];
@@ -331,6 +336,19 @@ void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRec
     } else {
         scattered = Ray(hitRecord.position, refracted);
     }
+    return true;
+}
+
+bool Light_Emit(int materialOffset, in Ray incident, in HitRecord hitRecord,
+out Ray scattered, out vec3 attenuation) {
+    vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
+
+    attenuation = color;
+
+    scattered.origin = hitRecord.position;
+    scattered.direction = hitRecord.normal + randomInUnitSphere();
+
+    return false;
 }
 
 vec3 getEnvironmentColor(Ray ray) {
@@ -338,14 +356,19 @@ vec3 getEnvironmentColor(Ray ray) {
 //    float t = (normalizeDir.y + 1.0) * 0.5;
 //    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 
-    vec3 direction = normalize(ray.direction);
-    float phi = atan(direction.z, direction.x);
-    float theta = acos(direction.y);
+    if (containSkybox == 1) {
+        vec3 direction = normalize(ray.direction);
+        float phi = atan(direction.z, direction.x);
+        float theta = acos(direction.y);
 
-    float u = (phi + PI) / (2.0 * PI);
-    float v = 1.0 - theta / PI;
+        float u = (phi + PI) / (2.0 * PI);
+        float v = 1.0 - theta / PI;
 
-    return texture(skybox, vec2(u, v)).rgb;
+        return texture(skybox, vec2(u, v)).rgb;
+
+    } else {
+        return vec3(0, 0, 0);
+    }
 }
 
 struct Scene {
@@ -435,6 +458,11 @@ vec3 trace(Ray ray, int depth) {
             } else if (hitRecord.materialType == Material_Dielectric) {
                 Scatter_Dielectric(hitRecord.materialPtr, ray, hitRecord,
                               scatterRay, attenuation);
+            } else if (hitRecord.materialType == Material_Emit) {
+                Light_Emit(hitRecord.materialPtr, ray, hitRecord,
+                                   scatterRay, attenuation);
+                bgColor = attenuation;
+                break;
             }
 
             ray = scatterRay;
@@ -445,6 +473,7 @@ vec3 trace(Ray ray, int depth) {
             break;
         }
     }
+
     return objColor * bgColor;
 }
 

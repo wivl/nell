@@ -102,6 +102,8 @@ int main() {
     // Shader
 
     nell::Shader ptShader("../src/shader/default.vert", "../src/shader/pathtrace.frag");
+    nell::Shader accShader("../src/shader/default.vert", "../src/shader/accumulate.frag");
+    nell::Shader previewShader("../src/shader/default.vert", "../src/shader/preview.frag");
 
 
     nell::Scene scene = nell::Scene::CornellBoxChessScene();
@@ -133,6 +135,7 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
+    int loop = 0;
     while (!glfwWindowShouldClose(window)) {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -184,6 +187,7 @@ int main() {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        loop++;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

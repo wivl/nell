@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include "../dependencies/imgui/imgui.h"
 #include "../dependencies/imgui/imgui_impl_glfw.h"
@@ -113,6 +114,9 @@ int main() {
 
 
 
+
+
+
     GLuint meshSSBO;
     glGenBuffers(1, &meshSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshSSBO);
@@ -122,6 +126,54 @@ int main() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, meshSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+
+    unsigned int ptTexture, ptFramebuffer;
+    glGenTextures(1, &ptTexture);
+    glBindTexture(GL_TEXTURE_2D, ptTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &ptFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, ptFramebuffer);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           ptTexture, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                  << std::endl;
+    }
+
+
+    unsigned int accTexture, accFramebuffer;
+    glGenTextures(1, &accTexture);
+    glBindTexture(GL_TEXTURE_2D, accTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &accFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, accFramebuffer);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           accTexture, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
+                  << std::endl;
+    }
+
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ptTexture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, accTexture);
+
+    glUniform1i(glGetUniformLocation(accShader.id, "currentFrame"), 0);
+    glUniform1i(glGetUniformLocation(accShader.id, "accFrame"), 1);
+    glUniform1i(glGetUniformLocation(previewShader.id, "frame"), 1);
 
 
     // Render loop
@@ -138,6 +190,7 @@ int main() {
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
 
+        glBindFramebuffer(GL_FRAMEBUFFER, ptFramebuffer);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -151,18 +204,29 @@ int main() {
         float randOrigin = 674764.0f * (nell::GetCPURandom() + 1.0f);
         auto time = static_cast<float>(glfwGetTime());
 
-        scene.sync(ptShader.id);
-
-
-        glUniform1f(glGetUniformLocation(ptShader.id, "randOrigin"), randOrigin);
-        glUniform1f(glGetUniformLocation(ptShader.id, "time"), time);
-
-
         ptShader.use();
 
+        scene.camera->updateAndSync(ptShader.id);
+        scene.sync(ptShader.id);
+        glUniform1f(glGetUniformLocation(ptShader.id, "randOrigin"), randOrigin);
+        glUniform1f(glGetUniformLocation(ptShader.id, "time"), time);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
+
+        glBindFramebuffer(GL_FRAMEBUFFER, accFramebuffer);
+        accShader.use();
+        glUniform1i(glGetUniformLocation(accShader.id, "accFrame"), 1);
+        glUniform1i(glGetUniformLocation(accShader.id, "currentFrame"), 0);
+        glUniform1i(glGetUniformLocation(accShader.id, "loop"), loop);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        previewShader.use();
+        glUniform1i(glGetUniformLocation(previewShader.id, "frame"), 1);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
         ImGui::Begin("Camera: ");
@@ -277,7 +341,7 @@ void processInput(GLFWwindow *window, nell::Camera *camera, unsigned int shaderi
         // Makes sure the next time the camera looks around it doesn't jump
         firstClick = true;
     }
-    camera->updateAndSync(shaderid);
+    // camera->updateAndSync(shaderid);
 }
 
 

@@ -10,8 +10,8 @@ uniform float time;
 uniform int width;
 uniform int height;
 
-uniform int containSkybox;
-uniform sampler2D skybox;
+//uniform int containSkybox;
+//uniform sampler2D skybox;
 
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
@@ -356,19 +356,19 @@ vec3 getEnvironmentColor(Ray ray) {
 //    float t = (normalizeDir.y + 1.0) * 0.5;
 //    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 
-    if (containSkybox == 1) {
-        vec3 direction = normalize(ray.direction);
-        float phi = atan(direction.z, direction.x);
-        float theta = acos(direction.y);
-
-        float u = (phi + PI) / (2.0 * PI);
-        float v = 1.0 - theta / PI;
-
-        return texture(skybox, vec2(u, v)).rgb;
-
-    } else {
+//    if (containSkybox == 1) {
+//        vec3 direction = normalize(ray.direction);
+//        float phi = atan(direction.z, direction.x);
+//        float theta = acos(direction.y);
+//
+//        float u = (phi + PI) / (2.0 * PI);
+//        float v = 1.0 - theta / PI;
+//
+//        return texture(skybox, vec2(u, v)).rgb;
+//
+//    } else {
         return vec3(0, 0, 0);
-    }
+//    }
 }
 
 struct Scene {

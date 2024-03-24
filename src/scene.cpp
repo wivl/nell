@@ -148,13 +148,13 @@ nell::Scene::Scene(int vnum, int fnum, nell::MeshData *mesh, nell::Camera *camer
 }
 
 void nell::Scene::sync(unsigned int shaderid) {
-    if (containSkybox) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, skybox);
-        glUniform1i(glGetUniformLocation(shaderid, "skybox"), 0);
-    }
+//    if (containSkybox) {
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, skybox);
+//        glUniform1i(glGetUniformLocation(shaderid, "skybox"), 0);
+//    }
 
-    glUniform1i(glGetUniformLocation(shaderid, "containSkybox"), containSkybox ? 1 : 0);
+//    glUniform1i(glGetUniformLocation(shaderid, "containSkybox"), containSkybox ? 1 : 0);
     glUniform1i(glGetUniformLocation(shaderid, "width"), width);
     glUniform1i(glGetUniformLocation(shaderid, "height"), height);
     glUniform1i(glGetUniformLocation(shaderid, "faceCount"), fnum);

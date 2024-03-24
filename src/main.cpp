@@ -40,6 +40,7 @@ float sensitivity = 40.0;
 
 
 
+bool cameraMove = false;
 
 int main() {
 
@@ -200,6 +201,10 @@ int main() {
         if (!io.WantCaptureMouse) {
             processInput(window, scene.camera, ptShader.id);
         }
+        if (cameraMove) {
+            loop = 0;
+            cameraMove = false;
+        }
 
         float randOrigin = 674764.0f * (nell::GetCPURandom() + 1.0f);
         auto time = static_cast<float>(glfwGetTime());
@@ -274,26 +279,32 @@ void processInput(GLFWwindow *window, nell::Camera *camera, unsigned int shaderi
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         camera->moveForward(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         camera->moveBackward(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         camera->moveLeft(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         camera->moveRight(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         camera->moveUp(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
         camera->moveDown(static_cast<float>(SPEED));
         camera->update();
+        cameraMove = true;
     }
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
@@ -333,6 +344,7 @@ void processInput(GLFWwindow *window, nell::Camera *camera, unsigned int shaderi
 
         // Sets mouse cursor to the middle of the screen so that it doesn't end up roaming around
         glfwSetCursorPos(window, (WIDTH / 2), (HEIGHT / 2));
+        cameraMove = true;
     }
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
     {

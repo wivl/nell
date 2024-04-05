@@ -163,7 +163,7 @@ void nell::Scene::sync(unsigned int shaderid) {
 
 const float materials[materialArraySize] {
         Material_Lambertian, 0.8, 0.8, 0.0,
-        Material_Metal, 0.1, 0.2, 0.5, 0.0,
+        Material_Metal, 0.73, 0.73, 0.73, 0.0,
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5,
         Material_Lambertian, 0.65, 0.05, 0.05, // red
         Material_Lambertian, 0.73, 0.73, 0.73, // white
@@ -190,7 +190,7 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
         mesh->materialPtrs[i] = 18;
     }
     for (int i = 456; i < 1038; i++) {
-        mesh->materialPtrs[i] = 18;
+        mesh->materialPtrs[i] = 4;
     }
     for (int i = 1038; i < 1396; i++) {
         mesh->materialPtrs[i] = 9;

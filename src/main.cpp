@@ -72,8 +72,10 @@ int main() {
     // Create window
 
     float vertices[] = {
-            1.0f, 1.0f, 1.0, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f,
+            1.0f, 1.0f, 1.0, 1.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f,
+            -1.0f, 1.0f, 0.0f, 1.0f,
     };
 
     unsigned int indices[] = {
@@ -181,12 +183,12 @@ int main() {
 
     nell::CPURandomInit();
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO(); (void) io;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 460");
+//    IMGUI_CHECKVERSION();
+//    ImGui::CreateContext();
+//    ImGuiIO &io = ImGui::GetIO(); (void) io;
+//    ImGui::StyleColorsDark();
+//    ImGui_ImplGlfw_InitForOpenGL(window, true);
+//    ImGui_ImplOpenGL3_Init("#version 460");
 
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
@@ -195,12 +197,12 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        if (!io.WantCaptureMouse) {
+//        ImGui_ImplOpenGL3_NewFrame();
+//        ImGui_ImplGlfw_NewFrame();
+//        ImGui::NewFrame();
+//        if (!io.WantCaptureMouse) {
             processInput(window, scene.camera, ptShader.id);
-        }
+//        }
         if (cameraMove) {
             loop = 0;
             cameraMove = false;
@@ -234,36 +236,39 @@ int main() {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
-        ImGui::Begin("Camera: ");
-        ImGui::Text("%s", (std::string("Position: ") +
-            std::to_string(scene.camera->position.x) + std::string(" ") +
-            std::to_string(scene.camera->position.y) + std::string(" ") +
-            std::to_string(scene.camera->position.z)
-                    ).c_str());
-        ImGui::Text("%s", (std::string("Direction: ") +
-                     std::to_string(scene.camera->direction.x) + std::string(" ") +
-                     std::to_string(scene.camera->direction.y) + std::string(" ") +
-                     std::to_string(scene.camera->direction.z)
-                    ).c_str());
-        ImGui::Text("%s", (std::string("Vertex Number: ") +
-                           std::to_string(scene.vnum)
-                ).c_str());
-        ImGui::Text("%s", (std::string("Triangle Number: ") +
-                           std::to_string(scene.fnum)
-        ).c_str());
-        ImGui::End();
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+//        ImGui::Begin("Info: ");
+//        ImGui::Text("%s", (std::string("Frame: ") +
+//                           std::to_string(loop+1)
+//        ).c_str());
+//        ImGui::Text("%s", (std::string("Camera Position: ") +
+//            std::to_string(scene.camera->position.x) + std::string(" ") +
+//            std::to_string(scene.camera->position.y) + std::string(" ") +
+//            std::to_string(scene.camera->position.z)
+//                    ).c_str());
+//        ImGui::Text("%s", (std::string("Camera Direction: ") +
+//                     std::to_string(scene.camera->direction.x) + std::string(" ") +
+//                     std::to_string(scene.camera->direction.y) + std::string(" ") +
+//                     std::to_string(scene.camera->direction.z)
+//                    ).c_str());
+//        ImGui::Text("%s", (std::string("Vertex Number: ") +
+//                           std::to_string(scene.vnum)
+//                ).c_str());
+//        ImGui::Text("%s", (std::string("Triangle Number: ") +
+//                           std::to_string(scene.fnum)
+//        ).c_str());
+//        ImGui::End();
+//
+//        ImGui::Render();
+//        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         loop++;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+//    ImGui_ImplOpenGL3_Shutdown();
+//    ImGui_ImplGlfw_Shutdown();
+//    ImGui::DestroyContext();
 
 }
 

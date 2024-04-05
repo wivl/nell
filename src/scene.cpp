@@ -187,16 +187,16 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
     }
 
     for (int i = 0; i < 456; i++) {
-        mesh->materialPtrs[i] = 9;
+        mesh->materialPtrs[i] = 18;
     }
     for (int i = 456; i < 1038; i++) {
-        mesh->materialPtrs[i] = 9;
+        mesh->materialPtrs[i] = 18;
     }
     for (int i = 1038; i < 1396; i++) {
         mesh->materialPtrs[i] = 9;
     }
     for (int i = 1396; i < 1862; i++) {
-        mesh->materialPtrs[i] = 9;
+        mesh->materialPtrs[i] = 18;
     }
     // red left wall
     for (int i = 1862; i < 1864; i++) {

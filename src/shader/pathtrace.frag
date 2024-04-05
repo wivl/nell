@@ -255,21 +255,27 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     return true;
 }
 
+float PDF_Lambertian() {
+    return 1.0/(PI);
+}
 
+float BRDF_Lambertian() {
+    return 1.0/PI;
+}
 
-// returns true if reflects
-bool Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
-                        out Ray scattered, out vec3 attenuation) {
+void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
+                        out Ray scattered, out vec3 attenuation, out float pdf, out float brdf) {
     vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
 
     attenuation = albedo;
 
     scattered.origin = hitRecord.position;
     scattered.direction = hitRecord.normal + randomInUnitSphere();
-    return true;
+    pdf = PDF_Lambertian();
+    brdf = BRDF_Lambertian();
 }
 
-bool Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
+void Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
                     out Ray scattered, out vec3 attenuation) {
     vec3 specular = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
     float fuzz = materials[materialOffset+4];
@@ -278,8 +284,6 @@ bool Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
 
     scattered.origin = hitRecord.position;
     scattered.direction = reflect(incident.direction, hitRecord.normal) + fuzz * randomInUnitSphere();
-
-    return true;
 }
 
 bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted){
@@ -301,7 +305,7 @@ float schlick(float cosine, float ior){
 }
 
 
-bool Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRecord,
+void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRecord,
                     out Ray scattered, out vec3 attenuation) {
     vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
     float refractIndex = materials[materialOffset+4];
@@ -336,7 +340,6 @@ bool Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRec
     } else {
         scattered = Ray(hitRecord.position, refracted);
     }
-    return true;
 }
 
 bool Light_Emit(int materialOffset, in Ray incident, in HitRecord hitRecord,
@@ -447,11 +450,13 @@ vec3 trace(Ray ray, int depth) {
         if (Scene_hit(scene, ray, 0.001, 100000.0, hitRecord)) {
             vec3 attenuation;
             Ray scatterRay;
+            float pdf = 1.0;
+            float brdf = 1.0;
 
             // ray intersect
             if (hitRecord.materialType == Material_Lambertian) {
                 Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
-                        scatterRay, attenuation);
+                        scatterRay, attenuation, pdf, brdf);
             } else if (hitRecord.materialType == Material_Metal) {
                 Scatter_Metal(hitRecord.materialPtr, ray, hitRecord,
                     scatterRay, attenuation);
@@ -467,7 +472,7 @@ vec3 trace(Ray ray, int depth) {
 
             ray = scatterRay;
             // shading
-            objColor *= attenuation;
+            objColor *= brdf * attenuation / pdf;
         } else {
             bgColor = getEnvironmentColor(ray);
             break;

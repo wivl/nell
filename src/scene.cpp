@@ -148,18 +148,18 @@ nell::Scene::Scene(int vnum, int fnum, nell::MeshData *mesh, nell::Camera *camer
 }
 
 void nell::Scene::sync(unsigned int shaderid) {
-//    if (containSkybox) {
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, skybox);
-//        glUniform1i(glGetUniformLocation(shaderid, "skybox"), 0);
-//    }
+    if (containSkybox) {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, skybox);
+        glUniform1i(glGetUniformLocation(shaderid, "skybox"), 2);
+    }
 
-//    glUniform1i(glGetUniformLocation(shaderid, "containSkybox"), containSkybox ? 1 : 0);
+    glUniform1i(glGetUniformLocation(shaderid, "containSkybox"), containSkybox ? 1 : 0);
     glUniform1i(glGetUniformLocation(shaderid, "width"), width);
     glUniform1i(glGetUniformLocation(shaderid, "height"), height);
     glUniform1i(glGetUniformLocation(shaderid, "faceCount"), fnum);
 }
-#define materialArraySize 30
+#define materialArraySize 34
 
 const float materials[materialArraySize] {
         Material_Lambertian, 0.8, 0.8, 0.0,
@@ -169,6 +169,7 @@ const float materials[materialArraySize] {
         Material_Lambertian, 0.73, 0.73, 0.73, // white
         Material_Lambertian, 0.12, 0.45, 0.15, // green
         Material_Emit, 4, 4, 4, // TODO:
+        Material_Emit, 10, 10, 10, // TODO:
 
 };
 
@@ -190,7 +191,7 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
         mesh->materialPtrs[i] = 18;
     }
     for (int i = 456; i < 1038; i++) {
-        mesh->materialPtrs[i] = 4;
+        mesh->materialPtrs[i] = 18;
     }
     for (int i = 1038; i < 1396; i++) {
         mesh->materialPtrs[i] = 9;
@@ -223,12 +224,79 @@ nell::Scene nell::Scene::CornellBoxChessScene() {
 
     vec2 screen_size = vec2(width, height);
     float aspect_ratio = screen_size.x / screen_size.y;
-    vec3 position = vec3(0, 5, 10.5);
+//    vec3 position = vec3(0, 5, 10.5);
+    vec3 position = vec3(0, 5, 20);
     vec3 direction = vec3(0, 0, -1);
     float focusLength = 1.0;
 
-    nell::Camera *camera = new nell::Camera(position, direction, 90, aspect_ratio, focusLength);
+    nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
 
 
     return Scene(vnum, fnum, mesh, camera, containSkybox, -1, width, height);
+}
+
+nell::Scene nell::Scene::CornellBox() {
+
+    nell::Model model = nell::Model("../assets/cornell-box.obj");
+    int vnum = 0, fnum = 0;
+    nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
+
+    bool containSkybox = true;
+    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
+    // material
+    for (int i = 0; i < materialArraySize; i++) {
+        mesh->materials[i] = materials[i];
+    }
+
+    for (int i = 0; i < fnum; i++) {
+        mesh->materialPtrs[i] = 0;
+    }
+    // back wall
+    for (int i = 0; i < 2; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // tall box
+    for (int i = 2; i < 12; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // short box
+    for (int i = 12; i < 22; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // right green wall
+    for (int i = 22; i < 24; i++) {
+        mesh->materialPtrs[i] = 22;
+    }
+    // left red wall
+    for (int i = 24; i < 26; i++) {
+        mesh->materialPtrs[i] = 14;
+    }
+    // floor
+    for (int i = 26; i < 28; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // ceiling
+    for (int i = 28; i < 30; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // light
+    for (int i = 30; i < 32; i++) {
+        mesh->materialPtrs[i] = 26;
+    }
+
+    int width = 800;
+    int height = 800;
+
+    vec2 screen_size = vec2(width, height);
+    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 position = vec3(0, 5, 10.5);
+//    light center (-0.234011, -3.0429785)
+    vec3 position = vec3(-0.218011, 2.5813135, 8);
+    vec3 direction = vec3(0, 0, -1);
+    float focusLength = 1.0;
+
+    nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
+
+
+    return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
 }

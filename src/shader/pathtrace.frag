@@ -10,8 +10,8 @@ uniform float time;
 uniform int width;
 uniform int height;
 
-//uniform int containSkybox;
-//uniform sampler2D skybox;
+uniform int containSkybox;
+uniform sampler2D skybox;
 
 #define MAX_VERTEX_NUM 40000
 #define MAX_FACE_NUM 40000
@@ -342,7 +342,7 @@ void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRec
     }
 }
 
-bool Light_Emit(int materialOffset, in Ray incident, in HitRecord hitRecord,
+void Light_Emit(int materialOffset, in Ray incident, in HitRecord hitRecord,
 out Ray scattered, out vec3 attenuation) {
     vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
 
@@ -350,15 +350,14 @@ out Ray scattered, out vec3 attenuation) {
 
     scattered.origin = hitRecord.position;
     scattered.direction = hitRecord.normal + randomInUnitSphere();
-
-    return false;
 }
+
 
 vec3 getEnvironmentColor(Ray ray) {
 //    vec3 normalizeDir = normalize(ray.direction);
 //    float t = (normalizeDir.y + 1.0) * 0.5;
 //    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-
+//
 //    if (containSkybox == 1) {
 //        vec3 direction = normalize(ray.direction);
 //        float phi = atan(direction.z, direction.x);
@@ -438,7 +437,7 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
 
 
 
-vec3 trace(Ray ray, int depth) {
+vec3 shade(Ray ray, int depth) {
     Scene scene = Scene_demo_1();
 
     HitRecord hitRecord;
@@ -482,6 +481,60 @@ vec3 trace(Ray ray, int depth) {
     return objColor * bgColor;
 }
 
+// Whitted style raytracing for comparing
+
+//void Whitted_Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
+//out Ray scattered, out vec3 attenuation) {
+//    vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
+//
+//    attenuation = albedo;
+//
+//    scattered.origin = hitRecord.position;
+//    scattered.direction = hitRecord.normal + randomInUnitSphere();
+//}
+//
+//vec3 Whitted_shade(Ray ray, int depth) {
+//    Scene scene = Scene_demo_1();
+//
+//    HitRecord hitRecord;
+//    vec3 bgColor = vec3(0);
+//    vec3 objColor = vec3(1.0);
+//
+//    while (depth > 0) {
+//        depth--;
+//        if (Scene_hit(scene, ray, 0.001, 100000.0, hitRecord)) {
+//            vec3 attenuation;
+//            Ray scatterRay;
+//
+//            // ray intersect
+//            if (hitRecord.materialType == Material_Lambertian) {
+//                Whitted_Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
+//                                   scatterRay, attenuation);
+//            } else if (hitRecord.materialType == Material_Metal) {
+//                Scatter_Metal(hitRecord.materialPtr, ray, hitRecord,
+//                              scatterRay, attenuation);
+//            } else if (hitRecord.materialType == Material_Dielectric) {
+//                Scatter_Dielectric(hitRecord.materialPtr, ray, hitRecord,
+//                                   scatterRay, attenuation);
+//            } else if (hitRecord.materialType == Material_Emit) {
+//                Light_Emit(hitRecord.materialPtr, ray, hitRecord,
+//                           scatterRay, attenuation);
+//                bgColor = attenuation;
+//                break;
+//            }
+//
+//            ray = scatterRay;
+//            // shading
+//            objColor *= attenuation;
+//        } else {
+//            bgColor = getEnvironmentColor(ray);
+//            break;
+//        }
+//    }
+//
+//    return objColor * bgColor;
+//}
+
 vec3 gammaCorrection(vec3 color) {
     return pow(color, vec3(1.0 / 2.2));
 }
@@ -499,7 +552,7 @@ void main() {
     int spp = 1;
     for (int i = 0; i < spp; i++) {
         Ray ray = Camera_getRay(camera, TexCoords + rand2() / screenSize);
-        color += trace(ray, 50);
+        color += shade(ray, 50);
     }
     color /= spp;
     color = gammaCorrection(color);

@@ -111,7 +111,11 @@ int main() {
 
 
 //    nell::Scene scene = nell::Scene::CornellBoxChessScene();
-    nell::Scene scene = nell::Scene::CornellBox();
+//    nell::Scene scene = nell::Scene::CornellBox();
+//    nell::Scene scene = nell::Scene::MitsubaCbox();
+//    nell::Scene scene = nell::Scene::MaterialShow();
+    nell::Scene scene = nell::Scene::Bunny();
+
 
     scene.camera->updateAndSync(ptShader.id);
 
@@ -184,12 +188,14 @@ int main() {
 
     nell::CPURandomInit();
 
+#ifdef USING_IMGUI
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO(); (void) io;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
+#endif
 
     int loop = 0;
     while (!glfwWindowShouldClose(window)) {
@@ -198,12 +204,16 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+#ifdef USING_IMGUI
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         if (!io.WantCaptureMouse) {
+#endif
             processInput(window, scene.camera, ptShader.id);
+#ifdef USING_IMGUI
         }
+#endif
         if (cameraMove) {
             loop = 0;
             cameraMove = false;
@@ -237,6 +247,7 @@ int main() {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
+#ifdef USING_IMGUI
         ImGui::Begin("Info: ");
         ImGui::Text("%s", (std::string("Frame: ") +
                            std::to_string(loop+1)
@@ -261,15 +272,18 @@ int main() {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
 
         loop++;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+#ifdef USING_IMGUI
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+#endif
 
 }
 

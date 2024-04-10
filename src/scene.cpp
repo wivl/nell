@@ -100,6 +100,7 @@ void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
             glm::vec3(0, -1, 0),
     };
 
+
     if (vnum + 24 >= MAX_VERTEX_NUM) {
         std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many vertices: " << vnum + 24 << std::endl;
         return ;
@@ -123,6 +124,53 @@ void cornellBoxilize(nell::MeshData *mesh, int &vnum, int &fnum) {
               << "vertex count: " << vnum << " "
               << "face count: " << fnum << std::endl;
 }
+
+
+void flat(nell::MeshData *mesh, int &vnum, int &fnum) {
+    glm::vec3 vert[4] = {
+            glm::vec3(50, 0, 50),
+            glm::vec3(50, 0, -50),
+            glm::vec3(-50, 0, -50),
+            glm::vec3(-50, 0, 50),
+    };
+
+    glm::ivec3 face[2] = {
+            glm::ivec3(vnum, vnum+1, vnum+2),
+            glm::ivec3(vnum, vnum+2, vnum+3),
+
+    };
+    glm::vec3 normal[4] = {
+            glm::vec3(0, 1, 0),
+            glm::vec3(0, 1, 0),
+            glm::vec3(0, 1, 0),
+            glm::vec3(0, 1, 0),
+    };
+
+
+    if (vnum + 4 >= MAX_VERTEX_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many vertices: " << vnum + 24 << std::endl;
+        return ;
+    }
+    if (fnum + 2 >= MAX_FACE_NUM) {
+        std::cout << "[Nell][Debug]" << "cornellBoxilize: Too many faces: " << fnum + 12 << std::endl;
+        return ;
+    }
+    for (int i = 0; i < 4; i++) {
+        mesh->vertices[vnum + i] = glm::vec4(vert[i], 0);
+    }
+    for (int i = 0; i < 4; i++) {
+        mesh->normals[vnum + i] = glm::vec4(normal[i], 0);
+    }
+    for (int i = 0; i < 2; i++) {
+        mesh->faces[fnum + i] = glm::ivec4(face[i], 0);
+    }
+    vnum += 4;
+    fnum += 2;
+    std::cout << "[Nell][Debug]" << "cornellBoxilize" << ": "
+              << "vertex count: " << vnum << " "
+              << "face count: " << fnum << std::endl;
+}
+
 
 nell::Scene::Scene() {
     fnum = 0;
@@ -159,17 +207,19 @@ void nell::Scene::sync(unsigned int shaderid) {
     glUniform1i(glGetUniformLocation(shaderid, "height"), height);
     glUniform1i(glGetUniformLocation(shaderid, "faceCount"), fnum);
 }
-#define materialArraySize 34
+#define materialArraySize 39
 
 const float materials[materialArraySize] {
         Material_Lambertian, 0.8, 0.8, 0.0,
         Material_Metal, 0.73, 0.73, 0.73, 0.0,
         Material_Dielectric, 1.0, 1.0, 1.0, 1.5,
-        Material_Lambertian, 0.65, 0.05, 0.05, // red
-        Material_Lambertian, 0.73, 0.73, 0.73, // white
-        Material_Lambertian, 0.12, 0.45, 0.15, // green
-        Material_Emit, 4, 4, 4, // TODO:
-        Material_Emit, 10, 10, 10, // TODO:
+        Material_Lambertian, 0.570068, 0.0430135, 0.0443706, // red
+        Material_Lambertian, 0.885809, 0.698859, 0.666422, // white
+        Material_Lambertian, 0.105421, 0.37798, 0.076425, // green
+        Material_Emit, 14, 14, 14, // TODO:
+        Material_Emit, 18.387, 13.9873, 6.75357, // TODO:
+        Material_Lambertian, 1, 1, 1, // white
+        Material_Chessboard,
 
 };
 
@@ -241,8 +291,8 @@ nell::Scene nell::Scene::CornellBox() {
     int vnum = 0, fnum = 0;
     nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
 
-    bool containSkybox = true;
-    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
+    bool containSkybox = false;
+//    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
     // material
     for (int i = 0; i < materialArraySize; i++) {
         mesh->materials[i] = materials[i];
@@ -281,7 +331,7 @@ nell::Scene nell::Scene::CornellBox() {
     }
     // light
     for (int i = 30; i < 32; i++) {
-        mesh->materialPtrs[i] = 26;
+        mesh->materialPtrs[i] = 30;
     }
 
     int width = 800;
@@ -298,5 +348,126 @@ nell::Scene nell::Scene::CornellBox() {
     nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
 
 
+    return Scene(vnum, fnum, mesh, camera, containSkybox, -1, width, height);
+}
+
+nell::Scene nell::Scene::MitsubaCbox() {
+
+    nell::Model model = nell::Model();
+    int vnum = 0, fnum = 0;
+    nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
+    cornellBoxilize(mesh, vnum, fnum);
+
+    bool containSkybox = false;
+//    unsigned int skybox = nell::loadImage("../assets/vestibule_8k.hdr");
+    // material
+    for (int i = 0; i < materialArraySize; i++) {
+        mesh->materials[i] = materials[i];
+    }
+
+
+    // green left wall
+    for (int i = 1862-1862; i < 1864-1862; i++) {
+        mesh->materialPtrs[i] = 22;
+    }
+    // white top wall
+    for (int i = 1864-1862; i < 1866-1862; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // red right wall
+    for (int i = 1866-1862; i < 1868-1862; i++) {
+        mesh->materialPtrs[i] = 14;
+    }
+    // white bottom and back wall
+    for (int i = 1868-1862; i < 1872-1862; i++) {
+        mesh->materialPtrs[i] = 18;
+    }
+    // light
+    for (int i = 1872-1862; i < fnum; i++) {
+        mesh->materialPtrs[i] = 30;
+    }
+    int width = 800;
+    int height = 800;
+
+    vec2 screen_size = vec2(width, height);
+    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 position = vec3(0, 5, 10.5);
+    vec3 position = vec3(0, 5, 19.6);
+    vec3 direction = vec3(0, 0, -1);
+    float focusLength = 1.0;
+
+    nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
+
+
+    return Scene(vnum, fnum, mesh, camera, containSkybox, -1, width, height);
+}
+
+nell::Scene nell::Scene::MaterialShow() {
+    nell::Model model = nell::Model("../assets/suzanne.obj");
+    int vnum = 0, fnum = 0;
+    nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
+    flat(mesh, vnum, fnum);
+
+    bool containSkybox = true;
+    unsigned int skybox = nell::loadImage("../assets/lake_pier_8k.hdr");
+    // material
+    for (int i = 0; i < materialArraySize; i++) {
+        mesh->materials[i] = materials[i];
+    }
+
+    for (int i = 0; i < 968; i++) {
+        mesh->materialPtrs[i] = 9;
+    }
+    for (int i = 968; i < fnum; i++) {
+        mesh->materialPtrs[i] = 38;
+    }
+
+    int width = 800;
+    int height = 800;
+
+    vec2 screen_size = vec2(width, height);
+    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 position = vec3(0, 5, 10.5);
+    vec3 position = vec3(-0.52, 1.6, 9.79);
+    vec3 direction = vec3(-0.33, -0.08, -0.93);
+    float focusLength = 1.0;
+
+    nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
+
+
     return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
+}
+
+nell::Scene nell::Scene::Bunny() {
+    nell::Model model = nell::Model("../assets/stanford-bunny.obj");
+    int vnum = 0, fnum = 0;
+    nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
+//    flat(mesh, vnum, fnum);
+
+    bool containSkybox = true;
+    unsigned int skybox = nell::loadImage("../assets/monte_scherbelino_4k.hdr");
+    // material
+    for (int i = 0; i < materialArraySize; i++) {
+        mesh->materials[i] = materials[i];
+    }
+
+    for (int i = 0; i < fnum; i++) {
+        mesh->materialPtrs[i] = 34;
+    }
+
+    int width = 800;
+    int height = 800;
+
+    vec2 screen_size = vec2(width, height);
+    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 position = vec3(0, 5, 10.5);
+    vec3 position = vec3(0, 0.1, 0.5);
+    vec3 direction = vec3(-0.03, 0, -0.99);
+    float focusLength = 1.0;
+
+    nell::Camera *camera = new nell::Camera(position, direction, 30, aspect_ratio, focusLength);
+
+
+    return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
+
 }

@@ -25,8 +25,8 @@ namespace nell {
     };
 
 
-#define MAX_VERTEX_NUM 40000
-#define MAX_FACE_NUM 40000
+#define MAX_VERTEX_NUM 500000
+#define MAX_FACE_NUM 100000
 #define MAX_MATERIAL_NUM 50
 
     struct MeshData {
@@ -72,6 +72,7 @@ namespace nell {
         std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string type_name);
 
     public:
+        explicit Model() {}
         explicit Model(const char *path) {
             load(path);
         }

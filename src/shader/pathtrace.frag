@@ -13,8 +13,8 @@ uniform int height;
 uniform int containSkybox;
 uniform sampler2D skybox;
 
-#define MAX_VERTEX_NUM 40000
-#define MAX_FACE_NUM 40000
+#define MAX_VERTEX_NUM 500000
+#define MAX_FACE_NUM 100000
 #define MAX_MATERIAL_NUM 50
 
 #define DEBUG_TRIANGLE_ONLY
@@ -114,6 +114,7 @@ const float Material_Lambertian = 0.0;
 const float Material_Metal = 1.0;
 const float Material_Dielectric = 2.0;
 const float Material_Emit = 3.0;
+const float Material_Chessboard = 4.0;
 
 //uniform int materialArraySize;
 //uniform float materials[20];
@@ -336,7 +337,7 @@ void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRec
     }
 
     if (rand() < reflect_prob) {
-        scattered = Ray(hitRecord.position, refracted);
+        scattered = Ray(hitRecord.position, reflected);
     } else {
         scattered = Ray(hitRecord.position, refracted);
     }
@@ -352,25 +353,46 @@ out Ray scattered, out vec3 attenuation) {
     scattered.direction = hitRecord.normal + randomInUnitSphere();
 }
 
+void Scatter_Chessboard(int materialOffset, in Ray incident, in HitRecord hitRecord,
+out Ray scattered, out vec3 attenuation) {
+    // TODO: 棋盘材质
+    vec3 albedo;
+
+    int x = int(hitRecord.position.x);
+    int y = int(hitRecord.position.y);
+    int z = int(hitRecord.position.z);
+
+    if ((x % 2 == 0 && z % 2 != 0) || (x % 2 != 0 && z % 2 == 0)) {
+        albedo = vec3(0, 0, 0);
+    } else {
+        albedo = vec3(1, 1, 1);
+    }
+
+    attenuation = albedo;
+
+    scattered.origin = hitRecord.position;
+    scattered.direction = hitRecord.normal + randomInUnitSphere();
+}
 
 vec3 getEnvironmentColor(Ray ray) {
 //    vec3 normalizeDir = normalize(ray.direction);
 //    float t = (normalizeDir.y + 1.0) * 0.5;
 //    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-//
-//    if (containSkybox == 1) {
-//        vec3 direction = normalize(ray.direction);
-//        float phi = atan(direction.z, direction.x);
-//        float theta = acos(direction.y);
-//
-//        float u = (phi + PI) / (2.0 * PI);
-//        float v = 1.0 - theta / PI;
-//
-//        return texture(skybox, vec2(u, v)).rgb;
-//
-//    } else {
+
+    if (containSkybox == 1) {
+        vec3 direction = normalize(ray.direction);
+        float phi = atan(direction.z, direction.x);
+        float theta = acos(direction.y);
+
+        float u = (phi + PI) / (2.0 * PI);
+        float v = 1.0 - theta / PI;
+
+        vec3 color = texture(skybox, vec2(u, v)).rgb;
+        return pow(color, vec3(2.2));
+
+    } else {
         return vec3(0, 0, 0);
-//    }
+    }
 }
 
 struct Scene {
@@ -380,7 +402,7 @@ struct Scene {
 
 Scene Scene_demo_1() {
     Scene scene;
-    scene.spheres[0] = Sphere_make(
+        scene.spheres[0] = Sphere_make(
         vec3(0, 0, -2),
         0.5,
         0
@@ -399,8 +421,30 @@ Scene Scene_demo_1() {
     return scene;
 }
 
+Scene Scene_MitsubaCboxSpheres() {
+    Scene scene;
+    scene.spheres[0] = Sphere_make(
+        vec3(-1.5, 2.5, 1),
+        2.5,
+        4
+    );
+    scene.spheres[1] = Sphere_make(
+        vec3(2.6, 1.25, -1),
+        1.25,
+        9
+    );
 
-#ifdef DEBUG_TRIANGLE_ONLY
+    scene.sphereCount = 2;
+    return scene;
+}
+
+Scene Scene_Empty() {
+    Scene scene;
+    scene.sphereCount = 0;
+    return scene;
+}
+
+
 bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
     HitRecord tempRecord;
     bool hitAnything = false;
@@ -414,15 +458,6 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
             t_close = hitRecord.t;
         }
     }
-
-    return hitAnything;
-}
-#else
-bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
-    HitRecord tempRecord;
-    bool hitAnything = false;
-    float t_close = t_max;
-
     for (int i = 0; i < scene.sphereCount; i++) {
         if (Sphere_hit(ray, scene.spheres[i], t_min, t_close, tempRecord)) {
             hitRecord = tempRecord;
@@ -433,12 +468,11 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
 
     return hitAnything;
 }
-#endif
 
 
 
 vec3 shade(Ray ray, int depth) {
-    Scene scene = Scene_demo_1();
+    Scene scene = Scene_Empty();
 
     HitRecord hitRecord;
     vec3 bgColor = vec3(0);
@@ -467,6 +501,9 @@ vec3 shade(Ray ray, int depth) {
                                    scatterRay, attenuation);
                 bgColor = attenuation;
                 break;
+            } else if (hitRecord.materialType == Material_Chessboard) {
+                Scatter_Chessboard(hitRecord.materialPtr, ray, hitRecord,
+                                   scatterRay, attenuation);
             }
 
             ray = scatterRay;
@@ -481,59 +518,6 @@ vec3 shade(Ray ray, int depth) {
     return objColor * bgColor;
 }
 
-// Whitted style raytracing for comparing
-
-//void Whitted_Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
-//out Ray scattered, out vec3 attenuation) {
-//    vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
-//
-//    attenuation = albedo;
-//
-//    scattered.origin = hitRecord.position;
-//    scattered.direction = hitRecord.normal + randomInUnitSphere();
-//}
-//
-//vec3 Whitted_shade(Ray ray, int depth) {
-//    Scene scene = Scene_demo_1();
-//
-//    HitRecord hitRecord;
-//    vec3 bgColor = vec3(0);
-//    vec3 objColor = vec3(1.0);
-//
-//    while (depth > 0) {
-//        depth--;
-//        if (Scene_hit(scene, ray, 0.001, 100000.0, hitRecord)) {
-//            vec3 attenuation;
-//            Ray scatterRay;
-//
-//            // ray intersect
-//            if (hitRecord.materialType == Material_Lambertian) {
-//                Whitted_Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
-//                                   scatterRay, attenuation);
-//            } else if (hitRecord.materialType == Material_Metal) {
-//                Scatter_Metal(hitRecord.materialPtr, ray, hitRecord,
-//                              scatterRay, attenuation);
-//            } else if (hitRecord.materialType == Material_Dielectric) {
-//                Scatter_Dielectric(hitRecord.materialPtr, ray, hitRecord,
-//                                   scatterRay, attenuation);
-//            } else if (hitRecord.materialType == Material_Emit) {
-//                Light_Emit(hitRecord.materialPtr, ray, hitRecord,
-//                           scatterRay, attenuation);
-//                bgColor = attenuation;
-//                break;
-//            }
-//
-//            ray = scatterRay;
-//            // shading
-//            objColor *= attenuation;
-//        } else {
-//            bgColor = getEnvironmentColor(ray);
-//            break;
-//        }
-//    }
-//
-//    return objColor * bgColor;
-//}
 
 vec3 gammaCorrection(vec3 color) {
     return pow(color, vec3(1.0 / 2.2));

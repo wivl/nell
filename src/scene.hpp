@@ -26,6 +26,9 @@ namespace nell {
     public:
         static Scene CornellBoxChessScene();
         static Scene CornellBox();
+        static Scene MitsubaCbox();
+        static Scene MaterialShow();
+        static Scene Bunny();
 
     };
 

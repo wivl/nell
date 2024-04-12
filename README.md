@@ -38,7 +38,7 @@ Nell has implemented a Ray-Tracing-in-One-Weekend-style raytracer in OpenGL, whi
 
 ## Build
 
-> The code base is written on a x86-64 Windows 11 machine for MSVC compiler.
+> The code base is written on an x86-64 Windows 11 machine for MSVC compiler.
 
 ### Dependencies
 

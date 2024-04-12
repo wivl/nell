@@ -110,11 +110,11 @@ int main() {
     nell::Shader previewShader("../src/shader/default.vert", "../src/shader/preview.frag");
 
 
-//    nell::Scene scene = nell::Scene::CornellBoxChessScene();
+    nell::Scene scene = nell::Scene::CornellBoxChessScene();
 //    nell::Scene scene = nell::Scene::CornellBox();
 //    nell::Scene scene = nell::Scene::MitsubaCbox();
 //    nell::Scene scene = nell::Scene::MaterialShow();
-    nell::Scene scene = nell::Scene::Bunny();
+//    nell::Scene scene = nell::Scene::Bunny();
 
 
     scene.camera->updateAndSync(ptShader.id);

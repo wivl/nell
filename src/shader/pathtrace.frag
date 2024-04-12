@@ -473,6 +473,7 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
 
 vec3 shade(Ray ray, int depth) {
     Scene scene = Scene_Empty();
+//    Scene scene = Scene_MitsubaCboxSpheres();
 
     HitRecord hitRecord;
     vec3 bgColor = vec3(0);

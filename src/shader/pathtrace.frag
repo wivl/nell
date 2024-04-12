@@ -1,20 +1,40 @@
-#version 410 core
+#version 460 core
 
-#define WIDTH 1600
-#define HEIGHT 800
+
+in vec2 TexCoords;
+out vec4 FragColor;
+
+uniform float randOrigin;
+uniform float time;
+
+uniform int width;
+uniform int height;
+
+uniform int containSkybox;
+uniform sampler2D skybox;
+
+#define MAX_VERTEX_NUM 500000
+#define MAX_FACE_NUM 100000
+#define MAX_MATERIAL_NUM 50
+
+#define DEBUG_TRIANGLE_ONLY
+
+uniform int faceCount;
+
+layout(std430, binding = 0) buffer VertexBuffer {
+    vec3 vertices[MAX_VERTEX_NUM];
+    vec3 normals[MAX_VERTEX_NUM];
+
+    ivec3 faces[MAX_FACE_NUM];
+
+    float materials[MAX_MATERIAL_NUM];
+    int materialPtrs[MAX_FACE_NUM];
+};
 
 #define PI 3.1415926535
 
-in vec2 TexCoords;
-
-out vec4 FragColor;
-
-
-
-
-// ---random
-
 uint wseed;
+// returns a [0, 1) value
 float randcore(inout uint seed) {
     seed = (seed ^ uint(61)) ^ (seed >> uint(16));
     seed *= uint(9);
@@ -28,21 +48,20 @@ float rand() {
     return randcore(wseed);
 }
 
-vec2 rand2(){
+vec2 rand2() {
     return vec2(rand(), rand());
 }
 
-vec3 rand3(){
+vec3 rand3() {
     return vec3(rand(), rand(), rand());
 }
 
-vec4 rand4(){
+vec4 rand4() {
     return vec4(rand(), rand(), rand(), rand());
 }
 
-vec3 random_in_unit_sphere() {
+vec3 randomInUnitSphere() {
     vec3 p;
-
     float theta = rand() * 2.0 * PI;
     float phi   = rand() * PI;
     p.y = cos(phi);
@@ -53,18 +72,6 @@ vec3 random_in_unit_sphere() {
 }
 
 
-vec3 random_in_unit_disk() {
-    while (true) {
-        vec3 p = vec3(rand()*2.0-1.0, rand()*2.0-1.0, 0.0);
-        if (dot(p, p) < 1.0)
-        return p;
-    }
-}
-
-
-
-
-// ---ray
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -74,94 +81,64 @@ struct Ray {
 Ray Ray_make(vec3 o, vec3 d) {
     Ray ray;
     ray.origin = o;
-    ray.direction = d;
+    ray.direction = normalize(d);
     return ray;
 }
 
-
-vec3 Ray_get_position(Ray ray, float t) {
+vec3 Ray_getPosition(Ray ray, float t) {
     return ray.origin + t*ray.direction;
 }
 
 
-// ---camera
 struct Camera {
-    vec3 lower_left_corner;
+    vec3 lowerLeftCorner;
     vec3 horizontal;
     vec3 vertical;
-    vec3 origin;
+    vec3 position;
     vec3 u, v, w;
-    float lens_radius;
-
-    uint loop;
+    int loop;
 };
 
 uniform Camera camera;
 
-// TODO: 临时编写的构造函数，后期使用 uniform 赋值
-Camera Camera_make(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist) {
-    Camera camera;
-
-    camera.origin = lookfrom;
-    camera.lens_radius = aperture / 2;
-
-    float theta = radians(vfov);
-    float half_height = tan(theta / 2);
-    float half_width = aspect * half_height;
-
-    camera.w = normalize(lookfrom - lookat);
-    camera.u = normalize(cross(vup, camera.w));
-    camera.v = cross(camera.w, camera.u);
-
-    camera.lower_left_corner = camera.origin
-    - half_width * focus_dist * camera.u
-    - half_height * focus_dist * camera.v
-    - focus_dist * camera.w;
-
-    camera.horizontal = 2 * half_width * focus_dist * camera.u;
-    camera.vertical = 2 * half_height * focus_dist * camera.v;
-
-    return camera;
-}
-
-Ray Camera_get_ray(Camera camera, vec2 uv){
-//    vec3 rd = camera.lens_radius * random_in_unit_disk();
-//    vec3 offset = camera.u * rd.x + camera.v * rd.y;
-//    Ray ray = Ray_make(camera.origin + offset,
-//                       camera.lower_left_corner +
-//                       uv.x * camera.horizontal +
-//                       uv.y * camera.vertical - camera.origin);
-    Ray ray = Ray_make(camera.origin,
-                   camera.lower_left_corner +
-                   uv.x * camera.horizontal +
-                   uv.y * camera.vertical - camera.origin);
-
+Ray Camera_getRay(Camera camera, vec2 uv){
+    Ray ray = Ray_make(camera.position,
+                       camera.lowerLeftCorner +
+                       uv.x * camera.horizontal +
+                       uv.y * camera.vertical - camera.position);
     return ray;
 }
 
-// ---hit record
+
+const float Material_Lambertian = 0.0;
+const float Material_Metal = 1.0;
+const float Material_Dielectric = 2.0;
+const float Material_Emit = 3.0;
+const float Material_Chessboard = 4.0;
+
+//uniform int materialArraySize;
+//uniform float materials[20];
+
 struct HitRecord {
-    float t;
+    float t; // time
     vec3 position;
     vec3 normal;
-    int material_ptr; // 材质数组的下标
-    int material_type; // 记录材质的类型
+    int materialPtr; // 材质开始的下标
+    float materialType; // 材质的类型
 };
 
-// ---sphere
+
 struct Sphere {
     vec3 center;
     float radius;
-    int material_ptr; // 材质数组的下标
-    int material_type; // 记录材质的类型
+    int material; // 既是下标，也是类型
 };
 
-Sphere Sphere_make(vec3 c, float r, int type, int ptr) {
+Sphere Sphere_make(vec3 center, float radius, int materialptr) {
     Sphere sphere;
-    sphere.center = c;
-    sphere.radius = r;
-    sphere.material_type = type;
-    sphere.material_ptr = ptr;
+    sphere.center = center;
+    sphere.radius = radius;
+    sphere.material = materialptr;
     return sphere;
 }
 
@@ -180,12 +157,12 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
         if (temp < t_max && temp > t_min) { // in the zone
             // set the record
             hitRecord.t = temp;
-            hitRecord.position = Ray_get_position(ray, hitRecord.t);
+            hitRecord.position = Ray_getPosition(ray, hitRecord.t);
             // hitRecord.normal = (hitRecord.position - sphere.center) / sphere.radius;
             hitRecord.normal = normalize(hitRecord.position - sphere.center);
 
-            hitRecord.material_ptr = sphere.material_ptr; // 材质数组的下标
-            hitRecord.material_type = sphere.material_type; // 记录材质的类型
+            hitRecord.materialPtr = sphere.material; // 材质数组的下标
+            hitRecord.materialType = materials[sphere.material]; // 记录材质的类型
 
             return true;
         }
@@ -193,12 +170,13 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
         temp = (-b + sqrt(delta)) / (2.0 * a); // further hit
         if (temp < t_max && temp > t_min) {
             hitRecord.t = temp;
-            hitRecord.position = Ray_get_position(ray, hitRecord.t);
+            hitRecord.position = Ray_getPosition(ray, hitRecord.t);
             // hitRecord.normal = (hitRecord.position - sphere.center) / sphere.radius;
             hitRecord.normal = normalize(hitRecord.position - sphere.center);
 
-            hitRecord.material_ptr = sphere.material_ptr; // 材质数组的下标
-            hitRecord.material_type = sphere.material_type; // 记录材质的类型
+
+            hitRecord.materialPtr = sphere.material; // 材质数组的下标
+            hitRecord.materialType = materials[sphere.material]; // 记录材质的类型
 
             return true;
         }
@@ -208,88 +186,105 @@ bool Sphere_hit(Ray ray, Sphere sphere, float t_min, float t_max, inout HitRecor
 
 
 
-// --material
-#define MAT_LAMBERTIAN 0
-#define MAT_METALLIC 1
-#define MAT_DIELECTRIC 2
 
-// 漫反射
-struct Lambertian{
-    vec3 albedo; // color
+struct Triangle {
+    vec3 position[3];
+    vec3 normal[3];
+    int materialPtr;
+    float materialType;
 };
 
-// 金属
-struct Metallic{
-    vec3 albedo; // color
-    float fuzz;  // TODO:
-};
+Triangle Triangle_get(int faceptr) {
+    ivec3 face = faces[faceptr];
+    Triangle triangle;
+    triangle.position[0] = vertices[face.x];
+    triangle.position[1] = vertices[face.y];
+    triangle.position[2] = vertices[face.z];
 
-// 电介质
-struct Dielectric{
-    vec3 albedo;
-    float ior;
-};
+    triangle.normal[0] = normals[face.x];
+    triangle.normal[1] = normals[face.y];
+    triangle.normal[2] = normals[face.z];
 
-Lambertian lambert_materials[4];
-Metallic metallic_materials[4];
-Dielectric dielectric_materials[4];
+    triangle.materialPtr = materialPtrs[faceptr];
+    triangle.materialType = materials[triangle.materialPtr];
 
-Lambertian Material_lambertian_make(vec3 albedo){
-    Lambertian lambertian;
-
-    lambertian.albedo = albedo;
-
-    return lambertian;
+    return triangle;
 }
 
-void Material_lambertian_scatter(in Lambertian lambertian,
-in Ray incident,
-in HitRecord hitRecord,
-out Ray scattered,
-out vec3 attenuation){
-    // return a color value
-    attenuation = lambertian.albedo;
+bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout HitRecord hitRecord) {
+    vec3 e1 = triangle.position[1] - triangle.position[0];
+    vec3 e2 = triangle.position[2] - triangle.position[0];
+    vec3 s = ray.origin - triangle.position[0];
+    vec3 s1 = cross(ray.direction, e2);
+    vec3 s2 = cross(s, e1);
 
-    // scattered ray
+    vec3 temp = vec3(
+        dot(s2, e2),
+        dot(s1, s),
+        dot(s2, ray.direction)
+    );
+
+    vec3 hitResult = (1.0/dot(s1, e1)) *  temp;
+    float t = hitResult.x;
+    float b1 = hitResult.y;
+    float b2 = hitResult.z;
+    float b0 = 1.0 - b1 - b2;
+
+    // test if hit result is available
+    if (t < t_min) {
+        return false;
+    }
+    if (t > t_max) {
+        return false;
+    }
+    if (b0 < 0 || b1 < 0 || b2 < 0) {
+        return false;
+    }
+
+
+    hitRecord.t = t;
+    hitRecord.position = b0 * triangle.position[0] +
+    b1 * triangle.position[1] +
+    b2 * triangle.position[2];
+
+    hitRecord.normal = b0 * triangle.normal[0] +
+    b1 * triangle.normal[1] +
+    b2 * triangle.normal[2];
+
+    hitRecord.materialPtr = triangle.materialPtr;
+    hitRecord.materialType = triangle.materialType;
+    return true;
+}
+
+float PDF_Lambertian() {
+    return 1.0/(PI);
+}
+
+float BRDF_Lambertian() {
+    return 1.0/PI;
+}
+
+void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
+                        out Ray scattered, out vec3 attenuation, out float pdf, out float brdf) {
+    vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
+
+    attenuation = albedo;
+
     scattered.origin = hitRecord.position;
-    scattered.direction = hitRecord.normal + random_in_unit_sphere();
+    scattered.direction = hitRecord.normal + randomInUnitSphere();
+    pdf = PDF_Lambertian();
+    brdf = BRDF_Lambertian();
 }
 
+void Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
+                    out Ray scattered, out vec3 attenuation) {
+    vec3 specular = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
+    float fuzz = materials[materialOffset+4];
 
-
-Metallic Material_metallic_make(vec3 albedo, float fuzz){
-    Metallic metallic;
-
-    metallic.albedo = albedo;
-    metallic.fuzz = fuzz;
-
-    return metallic;
-}
-
-// return scattered vector
-vec3 reflect(in vec3 v, in vec3 n) {
-    return v - 2 * dot(n, v) * n;
-}
-
-void Material_metallic_scatter(in Metallic metallic,
-in Ray incident,
-in HitRecord hitRecord,
-out Ray scattered,
-out vec3 attenuation) {
-    attenuation = metallic.albedo;
+    attenuation = specular;
 
     scattered.origin = hitRecord.position;
-    scattered.direction = reflect(incident.direction, hitRecord.normal) + metallic_materials[hitRecord.material_ptr].fuzz * random_in_unit_sphere();
-}
-
-
-Dielectric Material_dielectric_make(vec3 albedo, float ior){
-    Dielectric dielectric;
-
-    dielectric.albedo = albedo;
-    dielectric.ior = ior;
-
-    return dielectric;
+    scattered.direction = reflect(incident.direction, hitRecord.normal) + fuzz * randomInUnitSphere();
 }
 
 bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted){
@@ -310,178 +305,246 @@ float schlick(float cosine, float ior){
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
-void Material_dielectric_scatter(in Dielectric dielectric,
-in Ray incident,
-in HitRecord hit_record,
-out Ray scattered,
-out vec3 attenuation) {
-    attenuation = dielectric.albedo;
-    vec3 reflected = reflect(incident.direction, hit_record.normal);
+
+void Scatter_Dielectric(int materialOffset, in Ray incident, in HitRecord hitRecord,
+                    out Ray scattered, out vec3 attenuation) {
+    vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
+    float refractIndex = materials[materialOffset+4];
+
+    vec3 reflected = reflect(incident.direction, hitRecord.normal);
+    attenuation = color;
+
 
     vec3 outward_normal;
     float ni_over_nt;
     float cosine;
-    if (dot(incident.direction, hit_record.normal) > 0.0) { // 从内击中
-        outward_normal = -hit_record.normal;
-        ni_over_nt = dielectric.ior;
-        cosine = dot(incident.direction, hit_record.normal) / length(incident.direction);//入射光线角度
+    if (dot(incident.direction, hitRecord.normal) > 0.0) { // 从内击中
+                                                            outward_normal = -hitRecord.normal;
+                                                            ni_over_nt = refractIndex;
+                                                            cosine = dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
     } else { // 从外击中
-        outward_normal = hit_record.normal;
-        ni_over_nt = 1.0 / dielectric.ior;
-        cosine = -dot(incident.direction, hit_record.normal) / length(incident.direction);//入射光线角度
+             outward_normal = hitRecord.normal;
+             ni_over_nt = 1.0 / refractIndex;
+             cosine = -dot(incident.direction, hitRecord.normal) / length(incident.direction);//入射光线角度
     }
 
     float reflect_prob;
     vec3 refracted;
     if (refract(incident.direction, outward_normal, ni_over_nt, refracted)) {
-        reflect_prob = schlick(cosine, dielectric.ior);
+        reflect_prob = schlick(cosine, refractIndex);
     } else {
         reflect_prob = 1.0;
     }
 
     if (rand() < reflect_prob) {
-        scattered = Ray(hit_record.position, refracted);
+        scattered = Ray(hitRecord.position, reflected);
     } else {
-        scattered = Ray(hit_record.position, refracted);
+        scattered = Ray(hitRecord.position, refracted);
     }
 }
 
+void Light_Emit(int materialOffset, in Ray incident, in HitRecord hitRecord,
+out Ray scattered, out vec3 attenuation) {
+    vec3 color = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
 
-// ---world
-struct World {
-    int object_count;
-    Sphere objects[100];
+    attenuation = color;
+
+    scattered.origin = hitRecord.position;
+    scattered.direction = hitRecord.normal + randomInUnitSphere();
+}
+
+void Scatter_Chessboard(int materialOffset, in Ray incident, in HitRecord hitRecord,
+out Ray scattered, out vec3 attenuation) {
+    // TODO: 棋盘材质
+    vec3 albedo;
+
+    int x = int(hitRecord.position.x);
+    int y = int(hitRecord.position.y);
+    int z = int(hitRecord.position.z);
+
+    if ((x % 2 == 0 && z % 2 != 0) || (x % 2 != 0 && z % 2 == 0)) {
+        albedo = vec3(0, 0, 0);
+    } else {
+        albedo = vec3(1, 1, 1);
+    }
+
+    attenuation = albedo;
+
+    scattered.origin = hitRecord.position;
+    scattered.direction = hitRecord.normal + randomInUnitSphere();
+}
+
+vec3 getEnvironmentColor(Ray ray) {
+//    vec3 normalizeDir = normalize(ray.direction);
+//    float t = (normalizeDir.y + 1.0) * 0.5;
+//    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+
+    if (containSkybox == 1) {
+        vec3 direction = normalize(ray.direction);
+        float phi = atan(direction.z, direction.x);
+        float theta = acos(direction.y);
+
+        float u = (phi + PI) / (2.0 * PI);
+        float v = 1.0 - theta / PI;
+
+        vec3 color = texture(skybox, vec2(u, v)).rgb;
+        return pow(color, vec3(2.2));
+
+    } else {
+        return vec3(0, 0, 0);
+    }
+}
+
+struct Scene {
+    int sphereCount;
+    Sphere spheres[10];
 };
 
-World World_make() {
-    lambert_materials[0] = Material_lambertian_make(vec3(0.1, 0.7, 0.7));
-    lambert_materials[1] = Material_lambertian_make(vec3(0.5, 0.5, 0.5));
-    metallic_materials[0] = Material_metallic_make(vec3(0.8, 0.8, 0.8), 0.3);
-    dielectric_materials[0] = Material_dielectric_make(vec3(1.0, 1.0, 1.0), 1.5);
+Scene Scene_demo_1() {
+    Scene scene;
+        scene.spheres[0] = Sphere_make(
+        vec3(0, 0, -2),
+        0.5,
+        0
+    );
+    scene.spheres[1] = Sphere_make(
+        vec3(1, 0, -2),
+        0.5,
+        4
+    );
+    scene.spheres[2] = Sphere_make(
+        vec3(-1, 0, -2),
+        0.5,
+        9
+    );
+    scene.sphereCount = 3;
+    return scene;
+}
 
-    World world;
-    world.objects[0] = Sphere_make(
-    vec3(0, 0, -1),
-    0.5,
-    MAT_LAMBERTIAN,
-    0);
-    world.objects[1] = Sphere_make(
-    vec3(0, -100.5, -1.0),
-    100.0,
-    MAT_LAMBERTIAN,
-    1);
-    world.objects[2] = Sphere_make(
-    vec3(1.0, 0.0, -1.0),
-    0.5,
-    MAT_METALLIC,
-    0);
-    world.objects[3] = Sphere_make(
-    vec3(-1.0, 0.0, -1.0),
-    0.5,
-    MAT_DIELECTRIC,
-    0);
+Scene Scene_MitsubaCboxSpheres() {
+    Scene scene;
+    scene.spheres[0] = Sphere_make(
+        vec3(-1.5, 2.5, 1),
+        2.5,
+        4
+    );
+    scene.spheres[1] = Sphere_make(
+        vec3(2.6, 1.25, -1),
+        1.25,
+        9
+    );
 
-    world.object_count = 4;
+    scene.sphereCount = 2;
+    return scene;
+}
 
-    return world;
+Scene Scene_Empty() {
+    Scene scene;
+    scene.sphereCount = 0;
+    return scene;
 }
 
 
+bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord hitRecord) {
+    HitRecord tempRecord;
+    bool hitAnything = false;
+    float t_close = t_max;
 
-bool World_hit(World world, Ray ray, float t_min, float t_max, inout HitRecord hit_record) {
-    HitRecord temp_record;
-    bool hit_anything = false;
-    float t_close = t_max; // closest do far
-
-    for (int i = 0; i < world.object_count; i++) {
-        if (Sphere_hit(ray, world.objects[i], t_min, t_close, temp_record)) {
-            hit_record = temp_record;
-            hit_anything = true;
-            t_close = hit_record.t;
+    for (int i = 0; i < faceCount; i++) {
+        Triangle triangle = Triangle_get(i);
+        if (Triangle_hit(ray, triangle, t_min, t_close, tempRecord)) {
+            hitRecord = tempRecord;
+            hitAnything = true;
+            t_close = hitRecord.t;
+        }
+    }
+    for (int i = 0; i < scene.sphereCount; i++) {
+        if (Sphere_hit(ray, scene.spheres[i], t_min, t_close, tempRecord)) {
+            hitRecord = tempRecord;
+            hitAnything = true;
+            t_close = hitRecord.t;
         }
     }
 
-    return hit_anything;
-
+    return hitAnything;
 }
 
 
 
-// ---raytracing
-vec3 get_environemnt_color(Ray ray){
-    vec3 normalizeDir = normalize(ray.direction);
-    float t = (normalizeDir.y + 1.0) * 0.5;
-    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-}
+vec3 shade(Ray ray, int depth) {
+    Scene scene = Scene_Empty();
+//    Scene scene = Scene_MitsubaCboxSpheres();
 
-vec3 ray_trace(Ray ray, int depth) {
-
-    World world = World_make();
-
-    HitRecord hit_record;
-
-    vec3 bg_color = vec3(0);
-    vec3 obj_color = vec3(1.0);
+    HitRecord hitRecord;
+    vec3 bgColor = vec3(0);
+    vec3 objColor = vec3(1.0);
 
     while (depth > 0) {
-        depth --;
-        if (World_hit(world, ray, 0.001, 100000.0, hit_record)) {
-            vec3 attenuation; // 衰减值，物体颜色
-            Ray scatter_ray;
+        depth--;
+        if (Scene_hit(scene, ray, 0.001, 100000.0, hitRecord)) {
+            vec3 attenuation;
+            Ray scatterRay;
+            float pdf = 1.0;
+            float brdf = 1.0;
 
-            if (hit_record.material_type == MAT_LAMBERTIAN) {
-                Material_lambertian_scatter(lambert_materials[hit_record.material_ptr],
-                                            ray,
-                                            hit_record,
-                                            scatter_ray,
-                                            attenuation);
-            } else if (hit_record.material_type == MAT_METALLIC) {
-                Material_metallic_scatter(metallic_materials[hit_record.material_ptr], ray, hit_record, scatter_ray, attenuation);
-            } else if (hit_record.material_type == MAT_DIELECTRIC) {
-                Material_dielectric_scatter(dielectric_materials[hit_record.material_ptr], ray, hit_record, scatter_ray, attenuation);
+            // ray intersect
+            if (hitRecord.materialType == Material_Lambertian) {
+                Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
+                        scatterRay, attenuation, pdf, brdf);
+            } else if (hitRecord.materialType == Material_Metal) {
+                Scatter_Metal(hitRecord.materialPtr, ray, hitRecord,
+                    scatterRay, attenuation);
+            } else if (hitRecord.materialType == Material_Dielectric) {
+                Scatter_Dielectric(hitRecord.materialPtr, ray, hitRecord,
+                              scatterRay, attenuation);
+            } else if (hitRecord.materialType == Material_Emit) {
+                Light_Emit(hitRecord.materialPtr, ray, hitRecord,
+                                   scatterRay, attenuation);
+                bgColor = attenuation;
+                break;
+            } else if (hitRecord.materialType == Material_Chessboard) {
+                Scatter_Chessboard(hitRecord.materialPtr, ray, hitRecord,
+                                   scatterRay, attenuation);
             }
 
-            ray = scatter_ray;
-            obj_color *= attenuation;
+            ray = scatterRay;
+            // shading
+            objColor *= brdf * attenuation / pdf;
         } else {
-            bg_color = get_environemnt_color(ray);
+            bgColor = getEnvironmentColor(ray);
             break;
         }
     }
 
-    return obj_color * bg_color;
+    return objColor * bgColor;
 }
 
 
-
-vec3 gamma_correction(vec3 c){
-    return pow(c, vec3(1.0 / 2.2));
+vec3 gammaCorrection(vec3 color) {
+    return pow(color, vec3(1.0 / 2.2));
 }
 
-//uniform vec2 screen_size;
 
-uniform float rand_origin;
-uniform float time;
 
 void main() {
     float u = TexCoords.x; // 0 ~ 1
     float v = TexCoords.y; // 0 ~ 1
 
-    // TODO: 重写随机数种子从而获得随机结果
-//    wseed = uint(float(69557857) * (TexCoords.x * TexCoords.y) + fract(time));
-    wseed = uint(rand_origin * float(6.95857) * (TexCoords.x * TexCoords.y) + fract(time));
-    vec2 screen_size = vec2(WIDTH, HEIGHT);
+    wseed = uint(randOrigin * float(6.95857) * (TexCoords.x * TexCoords.y) + fract(time));
+    vec2 screenSize = vec2(width, height);
 
     vec3 color = vec3(0.0, 0.0, 0.0);
     int spp = 1;
     for (int i = 0; i < spp; i++) {
-        Ray ray = Camera_get_ray(camera, TexCoords + rand2() / screen_size);
-        color += ray_trace(ray, 50);
+        Ray ray = Camera_getRay(camera, TexCoords + rand2() / screenSize);
+        color += shade(ray, 50);
     }
     color /= spp;
-
-    color = gamma_correction(color);
-
+    color = gammaCorrection(color);
 
     FragColor = vec4(color, 1.0);
+
+
+
 }
+

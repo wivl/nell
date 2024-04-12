@@ -9,27 +9,42 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/nell/core/*.cpp src/nell/core/shader_utils/*.cpp)
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp src/nell/core/*.hpp src/nell/core/shader_utils/*.hpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+        src/*.cpp
+        src/utils/*.cpp
+        dependencies/imgui/*.cpp
+)
+
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
+        src/*.hpp
+        src/utils/*.hpp
+        dependencies/imgui/*.h
+)
 
 
-# DEPENDENCIES
-add_library(stb STATIC dependencies/stb/stb_image.cpp)
-target_include_directories(stb PUBLIC dependencies/stb)
 
-add_subdirectory(dependencies/glm)
-add_subdirectory(dependencies/glfw)
-add_subdirectory(dependencies/glad)
-add_subdirectory(dependencies/assimp)
 
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS})
 
+include(C:/Users/Weevil/scoop/apps/vcpkg/current/scripts/buildsystems/vcpkg.cmake)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC glm)
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC glfw)
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC glad)
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC assimp)
+find_package(glad CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glad::glad)
 
+find_package(glfw3 CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glfw)
+
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glm::glm)
+
+find_package(Stb REQUIRED)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE assimp::assimp)
+
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui::imgui)
 
 
 

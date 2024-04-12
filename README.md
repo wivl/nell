@@ -21,19 +21,19 @@ Nell has implemented a Ray-Tracing-in-One-Weekend-style raytracer in OpenGL, whi
 
 ## Gallery
 
-![bunny 256spp](readme-assets%2Fbunnies_256spp.png)
+![bunny](readme-assets%2Fbunnies_256spp.png)
 
-![cbox 1000spp](readme-assets%2Fcbox_1000spp.png)
+![cbox](readme-assets%2Fcbox_1000spp.png)
 
-![chess cbox 256spp](readme-assets%2Fchess_cbox_256spp.png)
+![chess](readme-assets%2Fchess.png)
 
-![cornellbox 256spp](readme-assets%2Fcornellbox_256spp.png)
+![cornellbox](readme-assets%2Fcbox.png)
 
-![material dielectric 256spp](readme-assets%2Fmaterial_dielectric_256spp.png)
+![material dielectric](readme-assets%2Fmaterial_dielectric_256spp.png)
 
-![material lambertian 256spp](readme-assets%2Fmaterial_lambertian_256spp.png)
+![material lambertian](readme-assets%2Fmaterial_lambertian_256spp.png)
 
-![material metal 256spp](readme-assets%2Fmaterial_metal_256spp.png)
+![material metal](readme-assets%2Fmaterial_metal_256spp.png)
 
 
 ## Build

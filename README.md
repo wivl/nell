@@ -10,7 +10,7 @@ Nell has implemented a Ray-Tracing-in-One-Weekend-style raytracer in OpenGL, whi
 * Lambertian, metal, dielectric and emit material
 * Spheres and triangles intersection
 * Mesh assets import
-* HDRI skybox
+* Skybox
 * Progressive rendering
 
 ## TODO

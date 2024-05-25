@@ -471,3 +471,37 @@ nell::Scene nell::Scene::Bunny() {
     return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
 
 }
+
+
+nell::Scene nell::Scene::Cube() {
+    nell::Model model = nell::Model("../assets/cube.obj");
+    int vnum = 0, fnum = 0;
+    nell::MeshData *mesh = model.generateMeshData(vnum, fnum);
+//    flat(mesh, vnum, fnum);
+
+    bool containSkybox = true;
+    unsigned int skybox = nell::loadImage("../assets/lake_pier_8k.hdr");
+    // material
+    for (int i = 0; i < materialArraySize; i++) {
+        mesh->materials[i] = materials[i];
+    }
+
+    for (int i = 0; i < fnum; i++) {
+        mesh->materialPtrs[i] = 9;
+    }
+
+    int width = 800;
+    int height = 800;
+
+    vec2 screen_size = vec2(width, height);
+    float aspect_ratio = screen_size.x / screen_size.y;
+//    vec3 position = vec3(0, 5, 10.5);
+    vec3 position = vec3(-0.52, 1.6, 9.79);
+    vec3 direction = vec3(-0.33, -0.08, -0.93);
+    float focusLength = 1.0;
+
+    nell::Camera *camera = new nell::Camera(position, direction, 40, aspect_ratio, focusLength);
+
+
+    return Scene(vnum, fnum, mesh, camera, containSkybox, skybox, width, height);
+}

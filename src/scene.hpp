@@ -29,6 +29,7 @@ namespace nell {
         static Scene MitsubaCbox();
         static Scene MaterialShow();
         static Scene Bunny();
+        static Scene Cube();
 
     };
 

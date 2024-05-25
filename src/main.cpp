@@ -31,6 +31,7 @@ void processInput(GLFWwindow *window, nell::Camera *camera, unsigned int shaderi
 #define WIDTH 800
 #define HEIGHT 800
 
+#define USING_IMGUI
 
 
 
@@ -110,11 +111,12 @@ int main() {
     nell::Shader previewShader("../src/shader/default.vert", "../src/shader/preview.frag");
 
 
-//    nell::Scene scene = nell::Scene::CornellBoxChessScene();
-    nell::Scene scene = nell::Scene::CornellBox();
+    nell::Scene scene = nell::Scene::CornellBoxChessScene();
+//    nell::Scene scene = nell::Scene::CornellBox();
 //    nell::Scene scene = nell::Scene::MitsubaCbox();
 //    nell::Scene scene = nell::Scene::MaterialShow();
 //    nell::Scene scene = nell::Scene::Bunny();
+//    nell::Scene scene = nell::Scene::Cube();
 
 
     scene.camera->updateAndSync(ptShader.id);

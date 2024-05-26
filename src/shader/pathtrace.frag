@@ -256,24 +256,16 @@ bool Triangle_hit(Ray ray, Triangle triangle, float t_min, float t_max, inout Hi
     return true;
 }
 
-float PDF_Lambertian() {
-    return 1.0/(PI);
-}
 
-float BRDF_Lambertian() {
-    return 1.0/PI;
-}
 
 void Scatter_lambertian(int materialOffset, in Ray incident, in HitRecord hitRecord,
-                        out Ray scattered, out vec3 attenuation, out float pdf, out float brdf) {
+                        out Ray scattered, out vec3 attenuation) {
     vec3 albedo = vec3(materials[materialOffset+1], materials[materialOffset+2], materials[materialOffset+3]);
 
     attenuation = albedo;
 
     scattered.origin = hitRecord.position;
     scattered.direction = hitRecord.normal + randomInUnitSphere();
-    pdf = PDF_Lambertian();
-    brdf = BRDF_Lambertian();
 }
 
 void Scatter_Metal(int materialOffset, in Ray incident, in HitRecord hitRecord,
@@ -472,51 +464,54 @@ bool Scene_hit(Scene scene, Ray ray, float t_min, float t_max, inout HitRecord h
 
 
 vec3 shade(Ray ray, int depth) {
-    Scene scene = Scene_Empty();
-//    Scene scene = Scene_MitsubaCboxSpheres();
+//    Scene scene = Scene_Empty();
+    Scene scene = Scene_MitsubaCboxSpheres();
 
     HitRecord hitRecord;
-    vec3 bgColor = vec3(0);
-    vec3 objColor = vec3(1.0);
+    vec3 color = vec3(1.0);
 
+    bool endShading = false;
     while (depth > 0) {
         depth--;
+        vec3 attenuation;
+        vec3 currentColor;
+        Ray scatterRay;
         if (Scene_hit(scene, ray, 0.001, 100000.0, hitRecord)) {
-            vec3 attenuation;
-            Ray scatterRay;
-            float pdf = 1.0;
-            float brdf = 1.0;
-
             // ray intersect
             if (hitRecord.materialType == Material_Lambertian) {
                 Scatter_lambertian(hitRecord.materialPtr, ray, hitRecord,
-                        scatterRay, attenuation, pdf, brdf);
+                        scatterRay, attenuation);
+                currentColor = attenuation;
             } else if (hitRecord.materialType == Material_Metal) {
                 Scatter_Metal(hitRecord.materialPtr, ray, hitRecord,
                     scatterRay, attenuation);
+                currentColor = attenuation;
             } else if (hitRecord.materialType == Material_Dielectric) {
                 Scatter_Dielectric(hitRecord.materialPtr, ray, hitRecord,
                               scatterRay, attenuation);
+                currentColor = attenuation;
             } else if (hitRecord.materialType == Material_Emit) {
                 Light_Emit(hitRecord.materialPtr, ray, hitRecord,
                                    scatterRay, attenuation);
-                bgColor = attenuation;
-                break;
+                currentColor = attenuation;
+                endShading = true;
             } else if (hitRecord.materialType == Material_Chessboard) {
                 Scatter_Chessboard(hitRecord.materialPtr, ray, hitRecord,
                                    scatterRay, attenuation);
+                currentColor = attenuation;
             }
-
             ray = scatterRay;
-            // shading
-            objColor *= brdf * attenuation / pdf;
         } else {
-            bgColor = getEnvironmentColor(ray);
+            currentColor = getEnvironmentColor(ray);
+            endShading = true;
+        }
+        color *= currentColor;
+        if (endShading) {
             break;
         }
     }
 
-    return objColor * bgColor;
+    return color;
 }
 
 
